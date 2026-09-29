@@ -1,0 +1,3250 @@
+[
+  {
+    "id": "agent-01-基础概念-q1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "一句话说清什么是 AI Agent？",
+    "keywords": [
+      "开环",
+      "闭环",
+      "观察结果",
+      "代码佐证"
+    ],
+    "answer": "第一性原理拆解：\n\n- 普通聊天是**开环**——你一句话、它一段回复，完事。\n- Agent 是**闭环**——它每一步不是在「生成最终答案」，而是在「决定下一步动作」（调哪个工具、问什么、是否结束）；动作作用在环境上，环境返回一个**观察结果（Observation）**，它再据此思考下一步。这个循环跑到底，才给你结果。\n\n一句话面试答法：\n\n> AI Agent 是以 LLM 为认知核心，结合规划、记忆、工具调用，能在多步交互中根据环境反馈持续自主决策并完成任务的系统；本质是**闭环的感知—思考—行动**，而不只是单次文本生成。\n\n**代码佐证**：`project-python/app/core/agent/react_agent.py` 的 `ReActAgent.run()` 就是一个最小闭环——`for step_idx in range(max_steps)` 里反复「让模型输出动作 → 解析 → 调工具 → 把 Observation 写回历史」，直到模型输出 `Final Answer` 或步数耗尽。",
+    "explanation": "Agent = 以大语言模型为大脑，能在一个「思考 → 行动 → 观察」的闭环里自己决定下一步，直到把任务做完的系统。",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "为什么说 Agent = LLM + Planning + Memory + Tools？缺一块会怎样？",
+    "keywords": [
+      "Planning",
+      "Memory",
+      "Tools",
+      "LLM"
+    ],
+    "answer": "| 缺的块                | 后果                                     |\n| ------------------ | -------------------------------------- |\n| 缺 **Planning（规划）** | 变成「只会接话」的聊天，长任务容易跑偏或一步登天完不成            |\n| 缺 **Memory（记忆）**   | 长对话丢线索，跨会话无法延续偏好与任务状态                  |\n| 缺 **Tools（工具）**    | 只能「空谈」，查不了实时信息、跑不了代码、改不了系统状态           |\n| 只有 **LLM**         | 没有外环，不是完整 Agent（最多是多步 CoT 的「弱环境」Agent） |\n\n第一性原理：LLM 本质是「给定上文，预测下文」的函数。它本身**不能改变世界、不能记住上次、不能拆解目标**。Planning/Memory/Tools 这三样，是把一个「预测下一个字的函数」升级成「能办事的实体」的必要外接模块。",
+    "explanation": "这四块分别对应「大脑 / 想清楚 / 记得住 / 动得了」。任意缺一块，它就不完整。",
+    "code": null,
+    "followUps": [
+      "「没有外部工具还能叫 Agent 吗？」→ 可以叫「弱环境 Agent」，只靠对话记忆 + 自我验证，但面试中强调**是否存在「行动—观察」循环**比纠结定义更清晰。"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agent 和 LLM Chain、ChatBot 的本质区别是什么？",
+    "keywords": [
+      "ChatBot",
+      "LLM Chain",
+      "写在代码里",
+      "Agent"
+    ],
+    "answer": "- **ChatBot**：控制流 = 对话管理（线性），以回复为主，通常不强调多步任务闭环。\n- **LLM Chain（链）**：控制流**写在代码里**——人预先排好 A→B→C 的顺序，路径相对固定（像流水线）。\n- **Agent**：控制流**在模型决策 + 环境反馈里**——模型根据当前观察决定下一步走哪、换不换工具、重不重试（仍可由代码设边界，像项目经理）。\n\n一张表记住：\n\n| 维度  | ChatBot | LLM Chain     | Agent      |\n| --- | ------- | ------------- | ---------- |\n| 控制流 | 线性对话    | 开发者定义的 DAG/序列 | 模型驱动的分支与循环 |\n| 工具  | 可有可无    | 嵌在固定节点        | 动态选择、多轮调用  |\n| 状态  | 会话上下文   | 各节点显式传递       | 记忆 + 环境观察  |\n| 适用  | 问答、闲聊   | ETL 式固定流程     | 开放/自动化任务   |\n\n第一性原理：Chain 是「**把智能焊死在流程里**」；Agent 是「**把选择权交给模型，用反馈校准**」。两者可结合——链负责稳定流程，Agent 负责链内某段的灵活分支。",
+    "explanation": "区别不在「有没有工具」，而在「控制流在哪」。",
+    "code": null,
+    "followUps": [
+      "「RAG + Chat 算 Agent 吗？」→ 单次检索再回答偏「增强型 Chat」；若有**多轮检索策略**（查不到换查询、分解子问题、交叉验证）就具备 Agent 特征。名字不重要，**讲清架构**即可。",
+      "「ChatBot 加插件就算 Agent 吗？」→ 不一定。看插件是由**固定规则**触发（更像带工具的 Bot），还是由**模型在多步推理中自主选择**并形成反馈闭环。"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-sup",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agent 和 Workflow 的区别？什么时候用 Agent、什么时候用 Workflow？",
+    "keywords": [
+      "Workflow",
+      "Agent",
+      "决策权交给 LLM",
+      "什么时候用 Workflow",
+      "什么时候用 Agent",
+      "混合"
+    ],
+    "answer": "第一性原理拆解：\n\n- **Workflow** 是把\"步骤和分支\"提前画成一张图（DAG / 状态机），每个节点的输入、输出、下一个节点都确定。运行时只按图执行，遇到分支用确定性规则（if/else、查表、路由）选路，**不依赖模型临场判断**。它像一条\"流水线\"——同样的输入永远走同样的路。\n- **Agent** 是把\"做什么、按什么顺序、调不调工具\"的**决策权交给 LLM**，每步根据环境返回的 Observation 再决定下一步，路径在运行时才\"长\"出来。同样的输入，不同中间结果会走出不同路线。\n\n> 关系：Workflow 是 LLM Chain 的\"工业化形态\"——比单纯 Chain 多了状态管理、重试、人工节点、可观测，但本质仍是\"控制流写死在代码里\"。所以 Agent vs Workflow，和 Agent vs Chain 是同一类区别，只是 Workflow 更完整、更接近生产编排。\n\n一张表记住：\n\n| 维度 | Workflow（工作流） | Agent（智能体） |\n| --- | --- | --- |\n| 控制流 | 代码 / 图写死（确定） | 模型 + 环境反馈驱动（动态） |\n| 决策点 | 预定义规则 / 查表 | LLM 推理 |\n| 不确定性 | 低，行为可预测 | 高，路径随输入与反馈变 |\n| 可测试性 | 强，易单测、易复现 | 弱，需轨迹回放与评估集 |\n| 成本 / 延迟 | 低、稳（未必调 LLM） | 高、波动（多步 × 大模型） |\n| 适用 | 固定流程、高吞吐、强合规 | 开放任务、需灵活推理、长程 |\n\n**什么时候用 Workflow（确定性优先）：**\n\n1. **步骤固定、可枚举**：如\"收到工单 → 查用户 → 套模板回复 → 关单\"，每步确定。\n2. **要求确定性 / 可审计 / 强合规**：金融审批、报销流转，错一步要能精确追责。\n3. **高吞吐低成本**：ETL、批量处理，不希望每步都烧一次 LLM。\n4. **路径能提前画完**：DAG 能表达全部分支，没有\"走到哪算哪\"的不确定性。\n\n**什么时候用 Agent（灵活优先）：**\n\n1. **任务开放、路径无法预先穷举**：如\"帮我调研竞品并出报告\"，中间要查多少资料、换几次方向未知。\n2. **需要动态工具选择与多步推理**：根据中间结果决定下一步调哪个工具。\n3. **环境反馈决定走向**：查不到就换查询、失败就重试或换策略、看到异常就深挖。\n4. **容忍一定不确定性、追求能力上限**：研发助手、开放域客服、探索式分析。\n\n**面试答法 + 关键洞察：**\n\n- 二者**不是非此即彼**——生产里最常见的是**混合**：Workflow 里嵌 Agent（某节点用 Agent 处理模糊子任务）、Agent 内用 Workflow（把稳定的子流程固化成工作流节点）。\n- **经验法则：\"能写死就用 Workflow，写不死的才上 Agent\"。** Agent 灵活但贵、难测、易跑偏；Workflow 便宜可控但僵。先用 Workflow 兜住 80% 确定路径，把 20% 模糊部分交给 Agent——别给\"固定三步报销\"上全套 ReAct，也别给\"开放式研究\"硬写 DAG。\n- **两个具体例子**：\n  - *Workflow*：电商\"下单 → 库存校验 → 支付 → 发货\"是确定性 DAG，每步规则和下一个节点都固定，用编排引擎跑，每次行为一致、可单测。\n  - *Agent*：给用户\"分析上季度销售下滑原因\"，Agent 自己决定先拉哪些数据、发现异常区域后要不要深挖、要不要调用归因工具，路径随数据动态展开。",
+    "explanation": "Workflow（工作流）= 路径由人/代码预先写死的确定性编排；Agent = 路径由模型在运行中根据反馈动态决定。区别在\"控制流由谁掌握、运行时要不要做决策\"。",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agent 的核心组成有哪些？各负责什么？",
+    "keywords": [
+      "感知",
+      "规划",
+      "工具",
+      "执行",
+      "反思"
+    ],
+    "answer": "1. **感知（Perception）**：把输入（文本/文件/接口返回/页面结构）转成模型可用的状态，并抽掉噪声。\n2. **规划（Planning）**：把目标拆子目标/步骤；可一次性计划，也可每步重规划（re-plan）。\n3. **记忆（Memory）**：短期（当前轨迹）+ 长期（用户画像/文档/向量库）。\n4. **工具（Tools）**：对外部世界可操作动作的抽象，必须有清晰 schema（名称/描述/参数）。\n5. **执行（Action）**：真正调工具、触发环境变化；处理超时、重试、幂等。\n6. **反思（Reflection）**：对失败/低质结果自省、纠错、换策略（常与验证器配合）。",
+    "explanation": "感知、规划、记忆、工具、执行、反思。",
+    "code": null,
+    "followUps": [
+      "「规划和执行要不要拆两个模型？」→ 可以拆。尽管单模型端到端更简单，但长链路易漂移。规划用强模型，执行用快模型，通过这样对Planner-Executor 拆分，可提升可控性。",
+      "「反思是不是必须？」→ 不是，但对易错、高要求的场景 收益大。代价是额外延迟与 Token。"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agent 的工作流程是怎样的？为什么需要「最大步数」？",
+    "keywords": [
+      "输入处理",
+      "任务分解",
+      "结果整合",
+      "输出生成",
+      "代码佐证",
+      "连续无进展",
+      "为什么需要"
+    ],
+    "answer": "**结论：**\n\n1. **输入处理**：意图识别、安全过滤、加载相关记忆/文档。\n2. **任务分解**：生成子任务或决策树。（其中复杂任务可通过人在回路，Human-in-the-loop 确认里程碑）。\n3. **工具选择与调用**：模型/路由选工具，执行器做鉴权、限流、结果规范化。\n4. **结果整合**：合并多源、解决冲突（如时间新的优先）。\n5. **输出生成**：自然语言答案 + 可选引用与轨迹（便于审计）。\n\n**为什么必须设最大步数？** 因为模型可能陷入「调工具→没进展→再调」的死循环。停止条件通常组合使用：模型声明 finish / 任务清单全完成 / 步数或预算上限 / 超时 / 连续无进展 / 外部成功信号（如测试通过）。\n\n**代码佐证（ReAct 循环）**：`react_agent.py` 的 `REACT_SYSTEM_PROMPT` 强制模型每步只输出一块：要么\n\n要么\n\n```\nThought: ...\nFinal Answer: <最终答案>\n```\n\n`_parse_react_step()` 从模型输出里解析出 Thought/Action/Action Input/Final Answer；`run()` 主循环每轮把 Observation 追加进 `history_lines`，再喂回下一轮。达到 `max_steps`（默认 10）仍未 `Final Answer` 就返回失败。**这就是「思考—行动—观察」闭环的最直白实现。**\n\n> **精确定义补充（来自答疑）：停止条件中的「连续无进展」与「外部成功信号」如何实现？**\n>\n> - **连续无进展**：在循环里给\"是否往前走\"打信号，连续 N 步无信号即停。三种常见实现：① 重复动作检测——比较最近几步的 `(action, action_input)`，同一工具 + 同参数连续 K 次即空转；② 任务状态检测——维护 todo，若 K 步内无任务完成即卡住；③ 语义进度判官——每步用规则/小模型判\"是否推进\"，连续 K 个\"否\"即停。\n> - **外部成功信号（如测试通过）**：让\"环境\"而非\"模型\"宣布完成。任务/环境提供确定性 `success_checker(state) -> bool`；每步工具调用后（或固定检查点）用当前状态跑它，返回 `True` 即立即破循环返回成功。例：代码 Agent 跑 pytest 全绿、数据 Agent 跑断言 SQL 符合预期。\n> - **为什么需要**：模型可能幻觉式宣布完成，或原地打转；这两个信号把终止锚定在客观事实上，比信任模型自述更可靠。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "Thought: ...\nAction: <工具名>\nAction Input: <JSON>"
+    },
+    "followUps": [
+      "「怎么避免 Agent 在工具调用间迷失？」→ 明确停止条件与最大步数；维护任务清单（todo）与当前子目标；每步要求结构化输出（JSON）；关键步骤强制验证（二次 LLM 审核 / 单元测试式检查）。",
+      "「结果冲突怎么整合？」→ 优先级规则（权威源 > 时间新 > 多源一致）、让模型显式输出「冲突说明」、必要时转人工。"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agent 怎么分类？LLM Agent 算哪一类？",
+    "keywords": [
+      "学习",
+      "混合型"
+    ],
+    "answer": "| 类型                  | 一句话                         |\n| ------------------- | --------------------------- |\n| 反应式（Reactive）       | 输入→动作，几乎不维护内部模型（快、可解释，但长程弱） |\n| 基于模型（Model-based）   | 脑中有「世界模型」，能预测行动后果           |\n| 基于目标（Goal-based）    | 明确要达成什么状态，能选路径              |\n| 基于效用（Utility-based） | 多目标权衡，选期望效用最大行动             |\n| 学习型（Learning）       | 从反馈更新策略/模型                  |\n\nLLM Agent：\n\n- 底层是模型推理；上层可接**目标/效用**（打分选路径）+ **记忆**（世界状态）+ **学习**（反馈更新）。\n- 所以面试答「LLM Agent 算哪一类」→ **混合型**：反应式做轻量路由，目标/效用做路径选择，记忆做状态维护，学习型从反馈进化。\n\n面试要点：\n\n- 「基于效用 vs 基于目标？」→ 目标型关注「是否达成」；效用型在**多个冲突目标**间权衡（成本/时延/风险/偏好），选综合最优而非单点达成。\n- 「反应式优缺点？」→ 优点快、可解释、易测；缺点对长程依赖与复杂推理弱，常与分层架构结合。",
+    "explanation": "经典 AI 教材按「智能程度」分五类；LLM Agent 通常是混合型。",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agent 典型落地场景有哪些？企业内部最该先关心什么？",
+    "keywords": [
+      "智能客服",
+      "代码助手",
+      "数据分析",
+      "自动化运维",
+      "知识管理",
+      "可控",
+      "安全",
+      "可观测"
+    ],
+    "answer": "最常见五类：\n\n1. **智能客服**：工单/订单/退换货；需知识库对齐、身份鉴权、升级人工。\n2. **代码助手**：读仓库、跑测试、提 PR；需沙箱、diff 审查、最小权限。\n3. **数据分析**：NL2SQL、制图、解读；需数据治理、行级权限、结果校验。\n4. **自动化运维**：查日志、重启、开单；需审批流、灰度、回滚。\n5. **知识管理**：摘要、标签、关联检索；需溯源、版本、权限。\n\n#### 展开：企业内部落地的三大非功能需求（递进式追问 Q1→Q3）\n\n**Q1：企业内部 Agent 落地，你最先关心哪三个非功能需求？**  \nA：安全与合规（权限 / 审计 / 合规）、可控性（人在回路 / 工具白名单）、可观测性（轨迹 / 指标 / 回放）。这三项不解决\"能不能用\"，而是解决\"**敢不敢上生产**\"——企业内出错有真实后果、数据敏感、要过合规审查。\n\nA：落地第一原则——**\"不出事\"比\"聪明\"更值钱**。一个 80% 答对但会越权删库、泄露 PII、出事查不到原因的 Agent，没人敢上生产；一个 60% 答对但每步可控、全程留痕、失败可定位的 Agent，反而能灰度上线。三条正好构成三道防线：**可控**（不让它乱动）、**安全**（不让它乱碰）、**可观测**（出事能查）。所以优先级永远是先保边界，再谈效果。\n\n**① 安全与合规**\n\n*权限：RBAC/ABAC 判定放行（怎么实现）*  \n在工具真正执行前插一道\"权限网关\"。网关从请求上下文取出当前用户身份与其被授予的作用域（scope）集合，再查本次工具调用所需的最小 scope（由工具元数据预先声明，如 `read:db`）。RBAC 下只需判断用户角色是否包含该权限；ABAC 下再叠加属性规则（部门 / 数据密级 / 调用时间 / IP）。判定通过才放行执行，否则抛 `PermissionError` 并记入审计。本质是把\"能不能做\"的裁决从模型手里收回，交给确定性的后端策略引擎。\n\n> 名词解释（RBAC / ABAC / OAuth2 scope）：\n>\n> - **RBAC（基于角色的访问控制）**：用户绑\"角色\"（如管理员 / 只读访客），角色绑一组权限。判断\"能不能做 X\"= 看用户角色是否含该权限。简单但粗。\n> - **ABAC（基于属性的访问控制）**：不只看角色，还看**属性**——用户属性（部门/职级）、资源属性（数据密级）、环境属性（时间/IP）。用策略规则细粒度判定。灵活但复杂。\n> - **OAuth2 的 scope（作用域）**：授权框架里，客户端申请一串权限标记（如 `read:db`、`call:email`）。用户授权后 token 就带这些 scope；资源服务器每次请求检查 token 的 scope 是否覆盖本次操作。**类比**：门禁卡只开了\"进 3 楼\"，刷 4 楼就拒。落到 Agent：框架拿着\"当前用户被授权的作用域\"每次工具调用前问后端\"这操作在不在允许范围\"，在就放行、不在就拒。\n\n*审计：结构化日志 + 不可篡改存储（怎么实现）*  \n在 Agent 主循环的\"执行动作\"节点**统一埋点**（而非各工具各自打日志），每次工具调用前后各写一条结构化记录：时间戳、用户 ID、工具名、入参脱敏后的哈希、出参摘要、成功与否、耗时。这些记录写入 append-only / WORM（一次写多次读）存储，使其事后无法被改写或删除，保证日志本身成为可信证据。统一埋点的意义是覆盖所有路径，避免某工具漏记造成审计缺口。\n\n```python\ndef audit_log(user, tool, args, ok, cost_ms):\n    record = {\n        \"ts\": time.time(), \"user\": user.id, \"tool\": tool.name,\n        \"args_hash\": sha256(json.dumps(args, sort_keys=True)),  # 只存脱敏摘要\n        \"ok\": ok, \"cost_ms\": cost_ms,\n    }\n    append_only_store.write(record)   # WORM / append-only，防篡改\n```\n\n*合规：PII 脱敏（输出前过滤）（怎么实现）*  \n在 Agent 产生对外文本（回复用户、写工单、调下游接口）之前串一道脱敏过滤器。过滤器用规则 / 正则或实体识别模型扫描文本，命中身份证、手机号、邮箱、银行卡等敏感字段后做掩码或替换（如手机号 `1[3-9]\\d{9}` → `[PHONE_MASKED]`）。也可结合数据分类分级策略，仅对高密级字段脱敏。这一步确保即便模型无意吐出敏感信息，也不会真正泄露。\n\n```python\ndef redact(text: str) -> str:\n    text = re.sub(r\"\\d{17}[\\dXx]\", \"[ID_MASKED]\", text)      # 身份证\n    text = re.sub(r\"1[3-9]\\d{9}\", \"[PHONE_MASKED]\", text)    # 手机号\n    return text\n```\n\n**一次工具调用的完整门控流程图：**\n\n```mermaid\nflowchart TD\n    A[模型输出 action + args] --> B{在工具白名单?}\n    B -- 否 --> X[拒绝并记录]\n    B -- 是 --> C{risk_level}\n    C -- high --> D[抛给人确认]\n    D -- 拒绝 --> X\n    D -- 通过 --> E{用户有该 scope?}\n    C -- low/mid --> E\n    E -- 否 --> X\n    E -- 是 --> F[执行工具]\n    F --> G[写审计日志·脱敏]\n    G --> H[返回 observation]\n```\n\n**② 可控性**\n\n*人在回路（HITL，分级确认）（怎么实现）*  \n给每个工具打 `risk_level` 元数据（low / mid / high）。执行前框架先读风险等级：low 直接跑；high 则在调用前把\"拟执行动作\"（工具名 + 参数）抛给前端 / 审批系统，**阻塞**等待真人点\"确认 / 拒绝\"，拒绝则中止；mid 走**异步审批队列**（后台批，不阻塞用户）。这样把\"是否真去执行\"的开关留在人手里——模型只能\"提议\"，不能\"拍板\"。\n\n```python\ndef execute_with_hitl(user, tool, args, risk):\n    if risk == \"high\":                          # 高风险：实时阻塞确认\n        if not request_approval(user, tool, args).granted:\n            return \"已取消\"\n    # mid 走异步审批队列；low 直接执行（代码略）\n    return tool.run(args)\n```\n\n*补充：异步审批队列 vs 实时阻塞确认 的区别*\n\n- **实时阻塞确认**：调用前卡住，必须等人点了\"通过 / 拒绝\"才继续。用户这一步会\"转圈等待\"，但能保证高危操作 100% 经过人确认才发生。适用于不可逆 / 高后果操作（删库、对外发钱、发外邮）。\n- **异步审批队列**：把待审批动作丢进后台队列，审批人方便时批量处理；期间 Agent 不阻塞，可先做别的低风险步骤或先返回中间结果给用户。适用于可延迟、不阻塞主流程的中风险操作。代价是动作可能在\"人还没批\"时就已对用户可见，故需设计成\"可撤销 / 可补偿\"。\n- **一句话区别**：阻塞确认是\"等人点了才动\"，异步队列是\"先记下来等人有空批、期间不卡你\"。前者保绝对安全但打断体验，后者不打断但要求操作可补偿。\n\n*工具白名单（解析后先查表再执行）（怎么实现）*  \n框架维护一个工具注册表 `ALLOWED_TOOLS = {name: callable}`，只登记过审的工具。模型输出的 action 先和注册表比对，命中才执行对应函数；若是 `os.system`、`curl`、任意未登记名，直接拒绝并记日志。这样模型再怎么幻觉，也只能调用白名单内有限能力，把破坏面锁死在预先评估过的范围内。\n\n```python\nALLOWED_TOOLS = {\"search\": search, \"calculator\": calc}  # 注册表\n\ndef dispatch(action, args):\n    if action not in ALLOWED_TOOLS:             # 模型点名表外即拒\n        raise Rejected(f\"未知工具 {action}，已拒绝\")\n    return ALLOWED_TOOLS[action](args)         # 只放行登记过的\n```\n\n**分级确认流程图：**\n\n```mermaid\nflowchart TD\n    A[工具调用请求] --> B{risk_level}\n    B -- low --> C[自动执行]\n    B -- mid --> D[入异步审批队列]\n    D --> E{人批/拒}\n    E -- 批 --> C\n    E -- 拒 --> F[取消]\n    B -- high --> G[实时阻塞确认]\n    G --> H{人确认?}\n    H -- 是 --> C\n    H -- 否 --> F\n```\n\n**③ 可观测性**\n\n*轨迹（ReAct 天然产物，持久化落库）（怎么实现）*  \nReAct 主循环每轮本就产生 `(thought, action, action_input, observation)`，把这些结构按顺序追加进一个 `trajectory` 列表，并在每轮结束后整体持久化落库（数据库 / 对象存储）。因为轨迹是 Agent 推理与工具调用的原生副产物，采集零额外成本；落库后便可在事后完整回看\"它每一步想了什么、调了什么、传了什么、看到什么\"。\n\n```python\ntrajectory = []\nfor step in react_loop():                      # react_agent.py 主循环\n    trajectory.append({\n        \"thought\": step.thought, \"action\": step.action,\n        \"args\": step.args, \"obs\": step.obs,\n    })\npersist(trajectory)                            # 完整链路落库\n```\n\n*指标 + 回放（只读重演）（怎么实现）*  \n在循环里维护计数器（步数、工具调用数、Token 用量）并随结果更新 success / 延迟，定时上报监控（如 Prometheus）。同时把轨迹存为\"工具名 + 入参 + 当时代码版本\"的调用链。回放时按序以**只读模式**重演每个工具——只 log \"会调用 X 传 Y\"而不真连生产，从而在不造成二次影响的前提下复现现场、定位故障步。\n\n```python\nmetrics = {\"steps\": 0, \"tool_calls\": 0, \"tokens\": 0, \"success\": None}\n\ndef replay(trajectory, read_only=True):\n    for s in trajectory:\n        if read_only:\n            log(f\"would call {s.action} with {s.args}\")   # 不真调，仅复现\n        else:\n            TOOL_REGISTRY[s.action].run(s.args)\n```\n\n**可观测性流程图：**\n\n```mermaid\nflowchart LR\n    A[ReAct 每步] --> B[追加 trajectory<br/>thought/action/args/obs]\n    B --> C[落库 + 指标埋点]\n    C --> D{出事?}\n    D -- 是 --> E[只读重演 trajectory]\n    E --> F[定位 哪步/哪个工具/哪个输入]\n```",
+    "explanation": "优先落地「高频、可工具化、可评估」的场景。",
+    "code": {
+      "language": "python",
+      "content": "def authorize(user, required_scope: str) -> None:\n    if required_scope not in user.scopes:   # scopes 如 {\"read:db\",\"call:email\"}\n        raise PermissionError(f\"user lacks scope {required_scope}\")\n\ndef execute_tool(user, tool_name, args):\n    tool = TOOL_REGISTRY[tool_name]\n    authorize(user, tool.required_scope)     # 不放行就抛错，工具不执行\n    return tool.run(args)"
+    },
+    "followUps": [
+      "「最先关心哪三个非功能需求？」→ **安全与合规**（权限/审计）、**可控性**（人在回路/工具白名单）、**可观测性**（轨迹/指标/回放）。",
+      "「客服怎么降幻觉？」→ 强 RAG 溯源、禁止无引用断言、模板化答复、未知转人工。"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q8",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agent 的挑战与局限？最大风险是什么？",
+    "keywords": [
+      "幻觉",
+      "安全性",
+      "成本控制",
+      "可解释性",
+      "评估困难",
+      "单轮 BLEU 是什么",
+      "为什么对 Agent 不适用"
+    ],
+    "answer": "五大挑战：\n\n1. **幻觉**：编造事实/工具参数 → 检索 grounding、约束解码、验证器。\n2. **安全性**：Prompt 注入、工具滥用、数据外泄 → 分层信任域、输出过滤、秘密不入上下文。\n3. **成本控制**：长链路 × 大上下文 → 摘要、小模型路由、缓存、批处理。\n4. **可解释性**：轨迹、引用、决策日志、关键操作可回放。\n5. **评估困难**：单轮 BLEU 不适用 → 过程指标（工具是否正确）+ 结果指标（任务是否完成）+ 人工抽检。\n\n> **名词补齐（来自答疑）**：\n> - **单轮 BLEU 是什么**：BLEU 是机器翻译的自动评测指标，按 n-gram 重叠率比较\"模型输出\"与\"人工参考译文\"，越像人写的分越高。\"单轮 BLEU\"即把它套到\"一次输入 → 一次输出\"上直接打分。\n> - **为什么对 Agent 不适用**：① 只评最终文本、丢掉过程（不管工具 / 参数 / 顺序对不对）；② 同一任务有无数正确写法，与单一参考答案算 n-gram 重叠会\"正确方案低分、错误方案高分\"，分数方向与对错相反；③ Agent 的\"答案\"常是动作（删文件 / 发邮件 / 写库），BLEU 无法打分。所以 Agent 要量\"事办没办成、路走没走对\"，而非\"像不像人话\"——即过程指标 + 结果指标 + 人工抽检。\n\n面试要点：\n\n- 「怎么评估 Agent 好坏？」→ 分层：任务成功率、平均步数/成本、工具错误率、用户满意度、安全事件数；基准 = 静态数据集 + 仿真环境 + 线上 A/B。\n- 「最大风险？」→ **复合错误 + 权限滥用**：单步小错在多步放大，或工具被诱导执行高危操作。必须最小权限 + 强审计 + 人在回路。\n- 「怎么防 Prompt 注入？」→ 工具层鉴权与用户身份绑定、结构化分隔用户内容与指令、敏感操作二次确认、输出侧 DLP。",
+    "explanation": "能力越强，越把错误放大到多步。工程上要「限步、限权、可观测、可回滚」。",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-q9",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "高频面试题精选（附标准答法）",
+    "keywords": [
+      "混合",
+      "DAG = 有向无环图",
+      "分级",
+      "两个目的",
+      "Q：如何测试 Agent？"
+    ],
+    "answer": "> 以下问题在大厂 Agent 岗出现频率极高，建议背熟并能在白板上画架构。\n\n**Q：「让模型自己选工具」可能不如「路由器 + 规则」，你怎么看？**  \nA：域窄、路径稳时，路由器更省成本、可测试、行为确定；全模型路由在开放域更灵活。最佳是**混合**：易分类走规则，难例走模型。\n\n**Q：简述 Planner-Executor 架构及优缺点。**  \nA：Planner 产出步骤/DAG；Executor 逐步执行并把结果反馈给 Planner 重规划。优点结构清晰、易加校验；缺点规划一次可能不准，需迭代重规划，两阶段增加延迟。\n\n> **名词补齐（来自答疑）**：\n> - **DAG = 有向无环图（Directed Acyclic Graph）**：边有方向（A→B 表示 B 依赖 A，须先 A 后 B），且无环（没有步骤依赖自己）。Planner 把任务拆成子步骤，用 DAG 表达\"依赖顺序 + 可并行性\"——彼此独立的步骤（如\"取订单历史\"\"取物流状态\"）可并行，都完成再进下一步。\n> - **为什么用 DAG 而非扁平序列**：序列会逼着本可并行的步骤也排队，白白拖慢；DAG 同时表达顺序约束与并行，让独立子任务并发执行。这也呼应第 56 行：Agent 的控制流是\"模型驱动的 DAG / 分支 / 循环\"，而 Chain 是开发者写死的线性序列——这正是 Agent 比 Chain 灵活的根源。\n\n**Q：多 Agent 协作 vs 单 Agent 多工具，怎么选？**  \nA：单 Agent 多工具实现简单、延迟低，适合边界清晰任务；多 Agent 做角色分工、并行探索、对抗审查（如批评者 Agent），但带来协调成本与一致性问题。选型看任务分解结构、组织边界、延迟与成本。\n\n**Q：如何做「人在回路」又不打断体验？**  \nA：分级——低风险自动执行；中风险异步审批；高风险实时确认。产品上用预授权、可撤销、默认最小权限。\n\n> **精确定义补充（来自答疑）**：\n>\n> - **定义**：人在回路 = Human-in-the-Loop（HITL），把\"人\"作为执行循环的一环，在关键时刻需人介入（确认 / 解释 / 纠正 / 引导决策），而非跑完才给人看结果。\n> - **分级（非二选一）**：低风险自动执行；中风险异步审批（后台批，不打断体验）；高风险实时确认。\n> - **两个目的**：① 安全 / 可控——高危操作（删库、发钱、发外邮）前拦一道；② 质量——模型不确定时借人的判断兜底。\n> - **与\"人在环上\"（human-on-the-loop）区别**：HITL 是\"这一步必须人点一下才继续\"；人在环上是\"人旁观、随时可介入但不阻塞\"。面试能区分这两个词是加分项。\n\n**Q：上下文窗口越来越大，还需要外部记忆吗？**  \nA：需要。长窗口 ≠ 低成本，也不等于可检索/可治理/可遗忘。外部记忆解决跨会话持久化、结构化权限、版本与溯源；窗口内更适合热工作集。\n\n**Q：Agent 日志应记录什么？**  \nA：用户输入（脱敏）、模型原始输出、解析后的工具调用、工具返回摘要、耗时与 Token、版本号（模型与 Prompt）、追踪 ID，便于复盘与合规审计。\n\n**Q：如何测试 Agent？**  \nA：单元测工具、模拟环境、回归集（固定任务+期望轨迹范围）、对抗用例（注入/越权）；避免只测最终答案而忽略过程正确性。\n\n## 本章速查表\n\n| 主题         | 一句话                      |\n| ---------- | ------------------------ |\n| 定义         | LLM + 规划 + 记忆 + 工具，闭环决策  |\n| vs Chain   | 控制流在代码 vs 在模型+环境反馈       |\n| vs ChatBot | 对话为主 vs 任务闭环与工具编排        |\n| 组成         | 感知、规划、记忆、工具、执行、反思        |\n| 流程         | 输入→分解→调用→整合→输出（ReAct 闭环） |\n| 分类         | 反应式、模型、目标、效用、学习（LLM=混合）  |\n| 场景         | 客服、代码、数据、运维、知识管理         |\n| 挑战         | 幻觉、安全、成本、可解释、评估          |\n\n## 本章动手点\n\n1. 读 `project-python/app/core/agent/react_agent.py` 的 `run()` 循环，画一张「Thought→Action→Observation」时序图。\n2. 读 `project-python/app/core/agent/orchestrator.py`，找出「工具白名单」「降级（plan 失败回退 react）」「反思」三处实现分别在哪几行。\n3. 自己实现一个最小 ReAct（假工具即可），并制造「工具报错」与「注入」用例验证治理手段。\n\n## 延伸 Q-A（来自答疑）：评估 Agent 的「线上 A/B 测试」\n\n> 对应上文 Q9「怎么评估 Agent 好坏」中提到的\"线上 A/B\"基准。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-01-基础概念-ext1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "评估 Agent 时说的\"线上 A/B 测试\"是什么？",
+    "keywords": [
+      "A",
+      "A/B"
+    ],
+    "answer": "**A：**\n\n- **A/B**：同一时刻把用户随机分两组，A 用旧版（对照组）、B 用新版（实验组），同时跑，对比完成率/满意度/耗时/出错数等指标。\n- **为什么不用前后对比**：前后比（周一旧、周二新）受时间与外部干扰，分不清是\"版本好\"还是\"那天本来就顺\"；A/B 同时 + 随机，排除时间与人群差异，干净归因到\"版本\"这一个变量。\n- **本质**：控制变量的对照实验（离线评估是模拟考，线上 A/B 是真战场）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-01-基础概念"
+    ],
+    "tags": [
+      "基础概念"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-01-基础概念",
+      "file": "01-基础概念.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "RAG 是什么、为什么需要？",
+    "keywords": [
+      "幻觉",
+      "知识过时",
+      "不可溯源",
+      "RAG vs 微调",
+      "RAG",
+      "微调",
+      "两者叠加"
+    ],
+    "answer": "**RAG = Retrieval-Augmented Generation（检索增强生成）。** 一句话：**让大模型在回答前，先去外部知识库\"查资料\"，再把资料连同问题一起喂给模型生成答案。**\n\n**为什么需要它（大模型三大硬伤）：**\n\n1. **幻觉**：模型\"一本正经编答案\"，因为它只依赖训练时记住的参数知识，没有\"查凭证\"的机制。\n2. **知识过时**：基座模型训练截止后不知道新事实（如最新政策、你的私有文档）。\n3. **不可溯源**：纯生成答了什么，你没法验证它哪来的。\n\nRAG 把\"参数记忆\"变成\"参数 + 检索\"，回答时**显式引用外部证据**，既降幻觉又能接私有/实时数据。\n\n**RAG vs 微调（什么时候用哪个）**：\n\n- 要\"注入新知识/私有文档/实时数据\" → 用 **RAG**（不动模型权重，库可随时更新）。\n- 要\"改变语气/风格/特定能力\" → 用 **微调**（第 10 章）。\n- 实践中常**两者叠加**：微调定风格，RAG 供事实。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "RAG 全流程（核心）",
+    "keywords": [
+      "离线建库",
+      "在线问答",
+      "流程图",
+      "伪代码",
+      "代码佐证"
+    ],
+    "answer": "RAG 分**离线建库**和**在线问答**两条线。\n\n#### 2.1 离线建库（把知识变成可检索的向量）\n\n#### 2.2 在线问答（用户提问时；必须要和 离线建库 用相同的embedding模型）\n\n```\n用户 Query\n  │ ① 向量化\n（同一 Embedding 模型）\n\n  ▼\n检索（向量库 ANN 召回 Top-K 相似 chunk）\n  │ ② 可选：重排 Rerank（精排）\n  ▼\n拼装 Prompt（\"根据以下资料回答：<chunks> 问题：<query>\"）\n  │ ③ 送 LLM 生成\n  ▼\n带引用的答案\n```\n\n**流程图（mermaid）：**\n\n```mermaid\nflowchart TD\n    subgraph OFF[\"离线建库\"]\n        D[原始文档] --> C[切分 Chunk]\n        C --> E[Embedding 编码]\n        E --> V[写入向量库 + 建 ANN 索引]\n    end\n    subgraph ON[\"在线问答\"]\n        Q[用户 Query] --> EQ[Embedding 编码]\n        EQ --> R[向量库 ANN 召回 Top-K]\n        R --> RR[可选 Rerank 精排]\n        RR --> P[拼装 Prompt]\n        P --> G[LLM 生成]\n        G --> A[带引用答案]\n    end\n    V -. \"供检索\" .-> R\n```\n\n**伪代码（Naive RAG）：**\n\n```python\n# —— 离线 ——\ndef build_index(docs, embed, vector_store):\n    for doc in docs:\n        for chunk in split(doc):                 # 切分\n            vec = embed.encode(chunk.text)        # 向量化\n            vector_store.insert(chunk.id, vec, chunk.text, chunk.meta)\n\n# —— 在线 ——\ndef answer(query, embed, vector_store, llm, top_k=5):\n    q_vec = embed.encode(query)                   # 查询向量化\n    hits = vector_store.search(q_vec, top_k)      # 召回\n    context = \"\\n\\n\".join(h.text for h in hits)   # 拼上下文\n    prompt = f\"资料:\\n{context}\\n\\n问题:{query}\\n请据资料回答:\"\n    return llm.generate(prompt)\n```\n\n> **代码佐证**：上面的 `split / embed / search` 在 `project-python/app/core/rag/` 真实存在——`MultiRetriever.vector_search` 负责\"查询向量化 + ANN 召回\"（`retriever.py:172`），`RAGGenerator.generate` 负责\"拼 Prompt + 生成 + 引用\"（`generator.py:107`）。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "文档 Corpus\n  │ ① 加载 + 清洗\n  ▼\n切分（Chunking）→ 得到若干 chunk\n  │ ② 每个 chunk 送 Embedding 模型\n  ▼\n向量化（dense vector）\n  │ ③ 写入向量库（Milvus / FAISS / pgvector ...）\n  ▼\n向量索引（ANN 索引，如 HNSW / IVF）"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "向量模型（Embedding）选型及其区别",
+    "keywords": [
+      "余弦 Cosine",
+      "点积 Dot",
+      "L2 距离",
+      "完全相似",
+      "M3E / bge-zh",
+      "GTE 系列",
+      "Cohere Embed",
+      "选型要点"
+    ],
+    "answer": "#### 3.1 什么是 Embedding\n\n**Embedding = 把一段文本映射成一个固定长度的实数向量**（如 768 维、1024 维）。核心性质：**语义相近的文本，向量在空间里也离得近**。所以\"查资料\"就变成\"在向量空间里找最近的邻居\"。\n\n**怎么衡量\"近\"——三种相似度度量：**\n\n| 度量            | 公式                                | 直觉        | 备注                                                        |\n| ------------- | --------------------------------- | --------- | --------------------------------------------------------- |\n| **余弦 Cosine** | `cos(a,b)= (a·b) / (\\|a\\|·\\|b\\|)` | 只看方向，不看长度 | 最常用；句子长短不影响                                               |\n| **点积 Dot**    | `a·b = Σ aᵢbᵢ`                    | 方向 + 长度都算 | 若向量已归一化，点积=余弦                                             |\n| **L2 距离**     | `‖a−b‖₂`                          | 欧氏距离，越小越近 | Milvus 默认 `L2`，代码里 `metric_type:\"L2\"`（`retriever.py:128`） |\n\n**余弦相似度算例**（二维示意）：\n\n- `a=(1,2)`，`b=(2,4)`（方向相同，b 是 a 的 2 倍）\n- `a·b=1·2+2·4=10`；`‖a‖=√5≈2.236`，`‖b‖=√20≈4.472`\n- `cos=10/(2.236×4.472)=10/10=1.0` → **完全相似**（方向一致）\n- 若 `c=(2,-1)`：`a·c=0` → `cos=0` → 正交（不相关）\n\n#### 3.2 主流向量模型及其区别\n\n| 模型                               | 来源      | 开源?    | 维度        | 特点 / 适用                     |\n| -------------------------------- | ------- | ------ | --------- | --------------------------- |\n| **text-embedding-3-small/large** | OpenAI  | 商业 API | 1536/3072 | 强泛化、多语言，按 token 计费          |\n| **bge-large-zh / bge-m3**        | 智源 BAAI | 开源     | 1024      | 中文强；**bge-m3 支持多语言+稀疏+多向量** |\n| **M3E / bge-zh**                 | 开源社区    | 开源     | 768       | 中文入门首选，轻量                   |\n| **GTE 系列**                       | 阿里      | 开源     | 768/1024  | 中英兼顾，效果稳                    |\n| **Cohere Embed**                 | Cohere  | 商业 API | 1024      | 多语言、支持指令                    |\n| **Jina Embeddings**              | Jina AI | 均有     | 变长        | 支持最长 8k token，长文档友好         |\n\n**选型要点（面试能讲出取舍）：**\n\n- **语言**：中文场景优先 bge / gte / m3e；多语言选 bge-m3 / Cohere / OpenAI。\n- **开源 vs API**：数据敏感/内网 → 开源自部署；求省事 → API。\n- **维度与成本**：维度越高通常越准但越贵（存储、检索耗时）；可后接降维（PCA/Matryoshka）。\n- **是否支持 instruction**：部分模型允许在查询端加指令（\"为检索召回编码：\"），能提升检索侧表现。\n- **长文本**：超长文档选支持长上下文的模型（如 jina / bge-m3），否则需先切分。\n\n> **代码佐证**：`retriever.py` 通过 `EmbeddingProtocol.embed_query(text)->list[float]` 抽象嵌入接口（`retriever.py:19`），`MultiRetriever.vector_search` 用它对 query 编码（`retriever.py:177`），与离线建库必须用**同一个模型**——这点面试常被问（检索与入库必须用同一 embedding，否则向量空间不一致，召回全错）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "分块策略（Chunking）选型",
+    "keywords": [
+      "检索粒度",
+      "固定长度",
+      "语义分块",
+      "父子分块",
+      "滑动窗口 + overlap",
+      "overlap",
+      "代码佐证"
+    ],
+    "answer": "#### 4.1 为什么要切块\n\n不能把整本文档直接塞给 embedding，原因：\n\n1. **embedding 对长文本会\"平均化\"**：一段几千字编码成一个向量，语义被稀释，检索时匹配不准。\n2. **检索粒度**：整篇召回噪声大；切成小片才能精准命中相关句。\n3. **上下文窗口限制**：LLM 一次能吃的长度有限，召回的 chunk 要能塞进 prompt。\n\n#### 4.2 常见分块策略\n\n| 策略                     | 做法                           | 适用              | 缺点        |\n| ---------------------- | ---------------------------- | --------------- | --------- |\n| **固定长度（按字符/token）**    | 每 N 字符一切                     | 通用、简单           | 可能切断句子/语义 |\n| **递归字符分割**             | 按 `\\n\\n`→`\\n`→`。` 递归切到目标长    | LangChain 默认，最稳 | 仍可能不完美    |\n| **按句子/段落**             | 以标点/段落为界                     | 结构清晰文档          | 块太小、跨段语义断 |\n| **语义分块**               | 用 embedding 对句聚类，相似聚一块       | 话题边界清晰          | 慢、需调阈值    |\n| **父子分块（small-to-big）** | 父块大（供生成）、子块小（供检索），检索命中子块回带父块 | 兼顾精准与上下文        | 实现稍复杂     |\n| **滑动窗口 + overlap**     | 相邻块重叠一部分                     | 防边界割裂           | 存储翻倍      |\n\n**overlap（重叠）干嘛用**：相邻块各切 200 字、重叠 40 字，使\"恰好落在边界\"的信息在两块里都出现，避免\"答案被切两半、哪块都不完整\"导致召回失败。重叠一般取块长的 10%~20%。\n\n**块大小怎么定（经验值）**：\n\n- 太小（<128 token）：缺上下文，模型看不懂。\n- 太大（>512 token）：噪声多、检索匹配被稀释、占 prompt。\n- **常用 200~~500 token + 10~~20% overlap**，具体看文档密度与模型上下文。\n\n> **代码佐证**：切分发生在\"入库之前\"，`MultiRetriever` 接收的是已切好的 `id_to_text`（`retriever.py:142 register_keyword_documents`），RAG 工程里切分是独立预处理步骤。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "向量检索 vs 关键词检索（区别）",
+    "keywords": [
+      "机制",
+      "优点",
+      "缺点",
+      "BM25 单条得分",
+      "BM25 直觉小例"
+    ],
+    "answer": "这是 RAG 最常被问的对比，落到代码就是 `retriever.py` 里的 `vector_search` 与 `_BM25Index`。\n\n#### 5.1 向量检索（dense / 语义检索）\n\n- **机制**：把 query 和 doc 都编码成向量，按相似度找最近邻。\n- **优点**：能查**同义/上位词/改写**（问\"怎么退火车票\"能召回\"退票流程\"）。\n- **缺点**：① 不精确（语义相近≠事实相关）；② 需向量化算力；③ 对**精确专有名词/编号**反而可能漏（\"订单号 A123\"被语义模糊掉）。\n\n#### 5.2 关键词检索（sparse / BM25）\n\n- **机制**：基于词面匹配 + 统计权重（TF-IDF 的升级版 BM25）。\n- **BM25 单条得分**（代码 `retriever.py:111` 直接体现）：\n  \n  - `f(t,d)`：词 t 在文档 d 的出现次数（TF）；\n  - `dl/avgdl`：本文档长度 / 平均长度（长度归一，长文惩罚）；\n  - `k1,b`：平滑参数（代码 `k1=1.5, b=0.75`）；\n  - `IDF(t)=log(1+(N−df+0.5)/(df+0.5))`：越稀有越重要（`retriever.py:92`）。\n- **优点**：精确、可解释、零向量化成本、对专有名词/编号极准。\n- **缺点**：查不到同义（\"车\"匹配不到\"汽车\"需另外处理）；中文依赖分词质量。\n\n#### 5.3 两者对比表\n\n| 维度      | 向量检索                                 | 关键词(BM25)                        |\n| ------- | ------------------------------------ | -------------------------------- |\n| 匹配依据    | 语义相似                                 | 词面 + 统计权重                        |\n| 同义/改写   | ✅ 强                                  | ❌ 弱                              |\n| 精确专名/编号 | ❌ 易漏                                 | ✅ 强                              |\n| 可解释性    | 弱                                    | 强                                |\n| 成本      | 需编码+向量库                              | 几乎零                              |\n| 代码落点    | `vector_search` (`retriever.py:172`) | `_BM25Index` (`retriever.py:47`) |\n\n> **BM25 直觉小例**：查询\"退款 流程\"。文档 A 出现\"退款\"3 次且较短 → TF 高、长度惩罚小 → 分高；文档 B 出现\"退款\"1 次且很长 → 分低。IDF 让\"流程\"这种常见词权重低、\"退款\"这种相对稀有的词权重高——和人的直觉一致。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "  score = IDF(t) · ( f(t,d)·(k1+1) ) / ( f(t,d) + k1·(1−b + b·dl/avgdl) )\n  "
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "混合检索与融合（Hybrid + RRF）",
+    "keywords": [
+      "互补",
+      "常用 60",
+      "RRF 融合算例",
+      "融合后排序",
+      "代码佐证"
+    ],
+    "answer": "#### 6.1 为什么混合更好\n\n向量检索补\"语义\"、BM25 补\"精确\"，两者**互补**：纯向量可能漏掉 exact-match 的关键句，纯 BM25 又抓不到同义改写。于是同时跑两路，再融合。\n\n#### 6.2 RRF（Reciprocal Rank Fusion，倒数排名融合）\n\n**核心思想**：不关心两路各自的原始分数（量纲不同、难直接相加），只看\"每个文档在两路里的排名\"，按排名给分融合。\n\n- `rank_i(d)`：文档 d 在第 i 路结果中的名次（从 1 开始）；\n- `k`：常数，平滑用，**常用 60**（`retriever.py:140 _rrf_k=60`）。\n\n**RRF 融合算例**：\n\n- 向量路 Top3：`[D1, D3, D2]`（名次 1,2,3）\n- BM25 路 Top3：`[D2, D1, D4]`（名次 1,2,3）\n- k=60，逐个文档累加 `1/(60+rank)`：\n  - D1：向量 1/61 + BM25 1/61 = 0.0328\n  - D2：向量 1/63 + BM25 1/61 = 0.0324\n  - D3：向量 1/62 = 0.0161\n  - D4：BM25 1/63 = 0.0159\n- **融合后排序**：`D1 > D2 > D3 > D4`——D1 两路都靠前，稳居第一；D2 虽在两路名次不同却被合理综合。\n\n> **代码佐证**：`retriever.py` 的 `hybrid_search` 并行跑向量+BM25（`retriever.py:287`），`_rrf_fuse` 按上式融合（`retriever.py:262`），正是生产级\"混合检索\"实现。\n\n**混合检索流程图：**\n\n```mermaid\nflowchart LR\n    Q[Query] --> V[向量路 Top-K]\n    Q --> K[BM25 路 Top-K]\n    V --> F[_rrf_fuse 融合]\n    K --> F\n    F --> O[融合后 Top-K]\n```\n\n## 🧩 模块二 · 检索优化策略（Advanced RAG）\n\n> 针对 Naive RAG 的 6 个短板逐条优化：查询侧 / 召回侧（重排+ANN）/ 生成侧 / 高级结构，以及如何评估。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "RRF_score(d) = Σ_{每路 i}  1 / (k + rank_i(d))"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "检索优化策略（Advanced RAG）",
+    "keywords": [
+      "查询质量差",
+      "召回不精准",
+      "无重排",
+      "块策略单一",
+      "原理",
+      "实现",
+      "不同角度",
+      "具体案例"
+    ],
+    "answer": "#### 7.0 为什么 Naive RAG 远远不够？——它的 6 个具体短板\n\n先把\"Naive RAG 哪里不够\"讲透，才能理解后面每一条优化**各自在补哪个洞**：\n\n| # | Naive RAG 的短板 | 具体表现                                     | 后果           |\n| - | ------------- | ---------------------------------------- | ------------ |\n| ① | **查询质量差**     | 用户 query 口语化、有歧义、带\"那个/这个\"代词，直接编码进向量空间找不准 | 检索起点就偏了      |\n| ② | **召回不精准**     | 只靠单路向量 ANN 召回，且 ANN 是近似+单向相似，Top-K 里混无关块 | 喂给 LLM 的噪声多  |\n| ③ | **无重排**       | 粗召顺序直接喂 LLM，顺序=相似度，但向量相似≠真正相关            | 关键块排后面被截断    |\n| ④ | **检索与生成脱钩**   | 生成时不知道\"检索到的够不够/是否相关\"，可能无视上下文编造           | 幻觉、答非所问      |\n| ⑤ | **块策略单一**     | 一刀切切分，小了缺上下文、大了噪声多                       | 精准与上下文难兼顾    |\n| ⑥ | **无全局/关系理解**  | 单点检索，跨文档推理弱                              | 全局摘要、关系问答答不出 |\n\n**优化策略 ↔ 短板 映射**：查询改写 / HyDE / 多查询 → 补①；混合检索 + RRF → 补②；Rerank → 补③；Self-RAG / CRAG / 反思式 → 补④；父子块 / Sentence-Window → 补⑤；GraphRAG → 补⑥。\n\n下面逐条讲**原理、实现、例子**。\n\n#### 7.1 查询侧优化（解决\"①查询质量差\"：让查得准）\n\n**核心思想**：在\"拿 query 去检索\"之前，先对 query 做加工，让它更贴近文档库的语义/词面分布。\n\n**① 查询改写（Query Rewriting / 查询扩展）**\n\n- **解决什么问题**：原始 query 太口语、有歧义、信息不全，直接 embedding 后落在向量空间里找不准。\n- **原理**：用 LLM 把用户问题改写成\"更适合检索的标准问句\"，或扩写成多个角度。\n- **实现**：\n  - 单查询改写：`prompt = \"把用户问题改写成一段清晰、包含关键实体的检索查询：{原始问题}\"`\n  - 多查询（Multi-Query）：让 LLM 把 1 个问题扩成 3~5 个**不同角度**的查询，分别检索，结果合并去重。\n- **具体案例**：\n  - 原始 query：\"那个退款咋弄啊，我上周买的\" ← 口语、代词\"那个\"无指代、缺实体\n  - 改写后：\"用户上周购买订单的退款申请流程是什么？\"\n  - 若走多查询，可扩为：`[\"订单退款申请步骤\", \"退款条件与时限要求\", \"退款到账时间一般为多久\"]`，三路检索结果并集，覆盖更全。\n\n**② HyDE（Hypothetical Document Embeddings，假设性文档嵌入）**\n\n- **解决什么问题**：用户问句是\"提问\"形态，文档是\"陈述/答案\"形态，二者在向量空间分布有 gap；用\"问题向量\"直接匹配\"答案向量\"往往不够准。\n- **原理**：先让 LLM **生成一段\"理想答案\"**（假想文档），再用这段答案的向量去检索——因为\"答案\"和\"答案\"分布更接近，召回更稳。注意：生成的假想文档**不喂给最终 LLM**，只用来检索。\n- **直觉/数学**：设 query 向量为 q，真实文档库向量为 {d_i}。Naive 检索找 argmax cos(q, d_i)；HyDE 先得假想答案 h = LLM(q)，再用 cos(embed(h), d_i)。由于 h 与真实答案同分布，embed(h) 比 q 更接近目标文档簇中心，召回提升。\n- **案例**：问\"量子纠缠怎么通俗理解？\"——直接检索可能只命中术语密集论文；先用 LLM 生成一段\"通俗解释\"假想答案，再用它的向量去搜，更容易命中同样\"通俗解释类\"的文档。\n\n**③ 意图路由 / 元数据过滤**\n\n- **解决什么问题**：不加过滤，检索要在全库里找，噪声大、慢、还可能召回无权限文档。\n- **实现**：先用规则/小模型/LLM 判断意图或抽取元数据（时间、来源、部门、权限、语言），**先按字段过滤候选集，再检索**。\n- **案例**：企业问答，query 带\"2024 年 Q3 财报\"，先 `filter(year=2024, quarter=Q3, doc_type=财报)` 缩小到几十篇，再语义检索——又快又准还天然带权限控制。\n\n#### 7.2 召回侧优化（解决\"②召回不精准 + ③无重排\"）\n\n召回侧两件事：(a) **选对的检索模态**（混合检索补②，见 §6），(b) **对召回结果精排**（Rerank 补③）。这里重点讲**重排的数学原理**和**ANN 为什么是近似（顺带讲清底层）**。\n\n**① 为什么检索召回后还要 Rerank？——Bi-Encoder vs Cross-Encoder**\n\n向量召回用的模型是 **Bi-Encoder（双塔）**：query 和 doc **各自独立**编码成向量，最后只做一次点积/余弦。\n\n- **优点**：doc 向量可**离线预计算**存库，检索时只对 query 编码一次，再 ANN 查，毫秒级。\n- **缺点**：query 和 doc 的 token **从没互相\"看到\"**，交互只发生在最后一层的单个点积——语义交互太弱。\n\n**Cross-Encoder（交叉编码）** 把 `(query, doc)` **拼成一段**，过完整 Transformer，让 query 每个 token 和 doc 每个 token 在多层里**互相做自注意力**，最后用 `[CLS]` 输出一个相关性分数：\n\n```\nCross-Encoder:  [CLS] query [SEP] doc [SEP] ──► Transformer(多层双向注意力) ──► [CLS] ──► score\n```\n\n- **数学/直觉**：Bi-Encoder 的交互是 `score = f(q)ᵀ g(d)`（两个独立函数）；Cross-Encoder 是 `score = h(q, d)`（联合函数），h 内部对每个 query token `q_i` 和 doc token `d_j` 计算注意力权重 `α_{ij}`，能建模\"query 的'退款'精确对齐到 doc 里'退货'那一句\"这种细粒度交互。准得多。\n- **代价**：没法预计算 doc 向量（因为要拼一起），每次都要跑 `(q, d)` 的前向，**慢 O(K·L)**（K=候选数，L=Transformer 计算量）。所以**不能对所有文档跑**。\n- **工程策略\"召回多 + 重排精\"**：先用 Bi-Encoder / 混合**粗召** Top-50~100（快），再用 Cross-Encoder **精排**到 Top-5 喂 LLM（准）。\n\n**Rerank 算例（排序变化）**：\n\n- 粗召 Top4（按向量相似）：`[D_a, D_b, D_c, D_d]`\n- Cross-Encoder 对 `(q, D_x)` 逐对打分：D_b=0.91, D_a=0.85, D_d=0.42, D_c=0.30\n- 重排 → `[D_b, D_a, D_d, D_c]`，取 Top2 喂 LLM：`D_b, D_a`（顺序变了，更相关）\n\n> **代码佐证**：`reranker.py` 的 `Reranker` 用 `cross-encoder/ms-marco-MiniLM-L-6-v2`（`reranker.py:19`），`rerank(query, documents, top_k)` 把 `(query, doc.content)` 成对送入 CrossEncoder 预测相关性并降序返回（`reranker.py:44`）。这就是\"粗召→精排\"里精排的真实实现。\n\n**② ANN 近似最近邻：为什么向量检索这么快？数学原理与取舍**\n\n- **问题**：精确最近邻（Exact / 暴力检索）要对 query 和库里**每一个**向量算距离，复杂度 O(N·d)。N=千万级时，每次查询都要算千万次距离，太慢。\n- **ANN（Approximate Nearest Neighbor，近似最近邻）**：牺牲一点点召回率，换几百上千倍加速——只检查\"最可能有近邻\"的一小部分向量。\n\n**主流两类 ANN 索引**：\n\n**(a) IVF（Inverted File / 倒排文件，FAISS 经典）**\n\n- **原理**：先用 k-means 把全部 N 个向量聚成 `k` 个簇，得到簇心 `{c_1...c_k}`。查询时，先算 query 离哪些簇心近，**只在这几个簇内**做精确检索。\n  - 聚类目标：`min Σ_{x∈簇} ‖x − c‖²`（k-means 标准目标）\n  - 查询：`选最近的 nprobe 个簇` → 只比较这 nprobe 个簇里的向量\n- **参数 `nprobe`**：每次查几个簇。nprobe 大 → 查得全（召回高）但慢；nprobe 小 → 快但可能漏。代码 `retriever.py:_search_milvus` 里 `nprobe=16` 即此。\n- **直觉**：像查通讯录——先按\"姓氏首字母\"定位到一页（簇），再在该页里找人，不用翻整本。\n\n**(b) HNSW（Hierarchical Navigable Small World / 分层可导航小世界图）**\n\n- **原理**：建一张**分层图**。顶层节点少、连长边（可\"跳\"很远），底层节点密、连短边（精确定位）。搜索时从顶层开始**贪心**：在当前节点找比自己离 query 更近的邻居，跳过去，直到局部最优，再下沉到下一层，最终在底层定位。\n  - 类似\"跳表 + 路网\"：顶层像高速，底层像胡同。\n- **关键参数（三个旋钮各自控制什么）**：\n  - **`M`（每节点最大连接数 / degree）**：建图时每个新节点在每层最多连 `M` 条邻居边（第 0 层用 `M₀ = 2M`，更密）。`M` 大 → 图里**冗余路径多、连通性好** → 搜索更不易\"走错路\"漏掉近邻，**召回高**；代价是每条边都要存 → **内存大、建图慢**。直觉：像\"每个路口有几个出口\"，出口多不易迷路但占地大。同时 `M` 还决定图的层数（见下式），`M` 越大图越\"深\"。\n  - **`efSearch`（查询时的候选集大小 / beam 宽）**：在第 0 层 beam search 中，动态维护一个容量为 `efSearch` 的结果集 `W`，只探索\"比 `W` 里最远点更接近 q\"的邻居（见伪代码与公式）。`efSearch` 大 → 搜索**辐射范围更广** → **召回高**，但每个 query 都要遍历更多节点 → **慢**。`efSearch` 必须 ≥ 要返回的 `K`，通常取 `K` 的 2~10 倍。\n  - **`efConstruction`（建图时的候选集大小）**：插入节点建图时，先找出 `efConstruction` 个最近邻居\"候选\"，再用启发式去冗余、保多样，从中挑 `M` 个建立连接。`efConstruction` 大 → 建图时\"看得更全\" → **图质量高**（导航性更好）→ 后续查询 **召回高**；代价是 **建图慢**。类比：`efSearch` 是\"查的时候看多远\"，`efConstruction` 是\"建的时候看多远\"。\n- **复杂度**：搜索约 O(log N)，比 IVF 更稳，几乎不随数据量线性变慢。\n\n**IVF 伪代码（建库 + 查询）**：\n\n```python\n# —— 建库 ——\ncentroids = kmeans(vectors, k)            # 用 k-means 得到 k 个簇心\nassignments = [[] for _ in range(k)]\nfor i, v in enumerate(vectors):\n    c = argmin_c ||v - centroids[c]||      # 把每个向量分配到最近簇\n    assignments[c].append(i)\n\n# —— 查询 ——\ndef ivf_search(q, nprobe, K):\n    near = top_k(centroids, q, nprobe)      # 1) 找最近的 nprobe 个簇心\n    candidates = [i for c in near for i in assignments[c]]   # 2) 只在这 nprobe 个簇里\n    return top_k_by_dist(q, candidates, K)  # 3) 候选内精确算距，返回 Top-K\n```\n\n**IVF 流程图**：\n\n```mermaid\nflowchart TD\n    Q[Query] --> C[\"算与 k 个簇心的距离\"]\n    C --> P[\"选最近 nprobe 个簇\"]\n    P --> S[\"只在这 nprobe 个簇内精确算距\"]\n    S --> R[返回 Top-K]\n```\n\n**HNSW 数学原理（补公式）**：\n\n- **① 层分配（为什么顶层稀疏）——体现 `M`**：每个节点按几何分布采样一个顶层编号 `l`：\n  ```\n  l(x) = ⌊ -ln(U) · mL ⌋ ，  U ~ Uniform(0,1) ，  mL = 1 / ln(M)\n  ```\n  `mL` 由 `M` 决定：`M` 越大 → `mL` 越小 → 期望层数 `E[l] = mL · ln(N)` 越大，网络更\"深\"、高层长边更多。结果是**少数节点在高层（长边跳很远），多数节点只在低层（短边精确定位）**——正是\"分层图\"的来源。同时 `M` 还是每节点连接数的硬上界（见③）。\n- **② 第 0 层 beam search 的边界——体现 `efSearch`**：查询在第 0 层做 beam search，动态维护一个结果集 `W`，**容量固定为 `|W| = efSearch`**。算法反复从候选队列弹出离 q 最近的节点 `c`，若它比 `W` 里最远的点还近才继续扩展邻居，否则终止：\n  ```\n  终止条件：  dist(q, c)  >  max_{w ∈ W} dist(q, w)        （W 的容量 = efSearch）\n  ```\n  `efSearch` 就是这个 `W` 的大小——它越大，搜索\"辐射范围\"越广、越不容易漏近邻（召回高），但要算更多距离（慢）。\n- **③ 建图时的邻居选择——体现 `M` 与 `efConstruction`**：插入节点 `q` 时，先在每层找出 `efConstruction` 个最近候选集 `C`（\"建的时候看多远\"），再用启发式从 `C` 中挑出 `M` 个彼此不冗余、覆盖方向多样的邻居建立连接：\n  ```\n  候选集  C = k_nearest(q, efConstruction)              # efConstruction 控制候选规模\n  邻居集  N = SELECT-NEIGHBORS-HEURISTIC(C, M)          # M 控制最终连接数\n  ```\n  启发式核心：逐个从 `C` 取离 q 最近的点 `e`，若 `e` 与已选邻居 `N` 都不重复、且方向不冲突才加入，直到选满 `M` 个。这样避免\"所有边都连向同一方向\"的冗余，保证图的**导航性**（从任意点都能沿边走到近邻）。\n- **④ 贪心下降（非第 0 层每层怎么找）**：在层 `lc > 0`，从入口点 `ep` 出发，反复检查 `ep` 的邻居中是否有人比 `ep` 更接近 q，是就跳过去，直到局部最优；再下沉到 `lc-1` 重复；直到第 0 层改用上面的 beam search。\n- **复杂度**：每层节点数约减半，路径长度 ~O(log N)。\n\n**HNSW 伪代码（查询，贪心 + beam；建图，insert）**：\n\n```python\n# ===== 查询：efSearch 即上文“搜索候选集大小”（beam 宽）=====\ndef hnsw_search(q, entry, efSearch, K):\n    ep = entry\n    for lc in range(top_layer, 0, -1):        # 1) 顶层→第1层：逐层贪心下降\n        ep = greedy_step(q, ep, layer=lc)      #    本层跳到局部最近点\n    # 2) 第 0 层 beam search，结果集 W 容量固定 = efSearch\n    W = [ep]; visited = {ep}                   # W = 当前结果集，|W| 上限 efSearch\n    candidates = PriorityQueue([ep])\n    while candidates:\n        c = candidates.pop_nearest(q)\n        farthest = max(W, key=lambda w: dist(q, w))\n        if dist(q, c) > dist(q, farthest): break   # 终止：c 不比 W 里最远的更近\n        for nb in neighbors(c, layer=0):\n            if nb not in visited:\n                visited.add(nb); candidates.push(nb, key=dist(q, nb))\n                W.append(nb)\n                if len(W) > efSearch:               # 超容量就丢最远的，保持 |W|=efSearch\n                    W.remove(farthest_of(W, q))\n    return top_k(W, K)                         # 最终只取 K 个返回（K <= efSearch）\n\n# ===== 建图：insert 一个节点，M / efConstruction 即上文两个旋钮 =====\ndef hnsw_insert(q, M, efConstruction):\n    l = sample_level(M)                        # 按 l=⌊-ln(U)·1/ln(M)⌋ 采样层（体现 M 决定层数）\n    ep = entry_point\n    for lc in range(top_layer, l, -1):         # 逐层贪心下降定位插入位置\n        ep = greedy_step(q, ep, layer=lc)\n    for lc in range(min(l, top_layer), -1, -1):\n        C = search_layer(q, ep, efConstruction, lc)   # 找 efConstruction 个候选（体现 efConstruction）\n        M_l = M if lc > 0 else 2 * M           # 第 0 层连接数翻倍\n        N = select_neighbors_heuristic(C, M_l) # 启发式挑 M_l 个不冗余邻居（体现 M）\n        for n in N:\n            connect(q, n, layer=lc)            # 建立双向边\n            if len(neighbors(n, lc)) > M_l:    # 邻居超限也裁剪回 M_l\n                neighbors(n, lc) = select_neighbors_heuristic(neighbors(n, lc), M_l)\n        ep = C\n```\n\n**HNSW 流程图（查询 + 建图）**：\n\n```mermaid\nflowchart TD\n    Q[\"Query q\"] --> E[\"顶层入口点 entry\"]\n    E --> G1[\"层 lc>0: 贪心下降 跳到更近邻居\"]\n    G1 --> D1[\"下沉到下一层 lc-1\"]\n    D1 --> G2[\"... 重复直到第 0 层 ...\"]\n    G2 --> B[\"第 0 层 beam search\\n结果集 W 容量 = efSearch\"]\n    B --> C1{\"弹出最近候选 c\\ndist(q,c) > W 中最远?\"}\n    C1 -->|是| STOP[\"停止扩展\"]\n    C1 -->|否| C2[\"扩展 c 的邻居\\nW 保持 <= efSearch 个\"]\n    C2 --> B\n    STOP --> R[\"返回 Top-K (K<=efSearch)\"]\n\n    subgraph INSERT[\"建图 insert（体现 M / efConstruction）\"]\n        Nq[\"新节点 q\"] --> NL[\"采样层 l = ⌊-ln(U)·1/ln(M)⌋\"]\n        NL --> NGD[\"逐层贪心下降定位\"]\n        NGD --> NC[\"每层找 efConstruction 个候选\"]\n        NC --> NH[\"启发式挑 M 个不冗余邻居\\n(第0层 2M)\"]\n        NH --> NCONN[\"建立双向边\\n每节点最多 M / 2M 条边\"]\n    end\n```\n\n**ANN 的优缺点总结**：\n\n|      | 优点                      | 缺点                                      |\n| ---- | ----------------------- | --------------------------------------- |\n| IVF  | 内存小、可控（nprobe）、FAISS 成熟 | 召回随 nprobe 波动；簇边界可能漏近邻                  |\n| HNSW | 快且稳（log N）、召回高          | 内存占用大（存整张图）、构建慢                         |\n| 两者共性 | 比暴力快几百~上千倍              | **近似**：Top-K 可能漏掉真正最近的那几个（需用 Rerank 兜底） |\n\n> **回到主线**：正因为 ANN 是\"近似 + 单向相似\"，粗召结果里混无关块很正常——这正是 7.2① 里\"为什么还要 Rerank\"的根本原因，两者是配套设计。\n\n#### 7.3 生成侧优化（解决\"④检索与生成脱钩\"的先兆 + 提升可用性）\n\n**① 引用标注（Grounding / Citation）**\n\n- **原理**：让答案\"可追溯到具体证据\"。核心问题是\"生成与检索脱钩\"——模型可能无视检索结果编造。引用标注强制模型在每句结论后挂上它依据的召回块编号，使\"说了什么\"和\"依据什么\"绑定。\n- **实现**：检索时给每个 chunk 编号 `[1][2]...`，prompt 里要求\"回答中用 `[n]` 标注所引依据\"；生成后解析 `[n]` ↔ chunk 映射（代码 `RAGGenerator._extract_citations`，`generator.py:79`）。\n- **具体案例**：问\"洋山港 2023 年集装箱吞吐量是多少？\" → 模型输出\"洋山港 2023 年集装箱吞吐量达 4900 万 TEU[1]\"，`[1]` 对应检索到的《2023 上海港年报》那一段；读者可点开验证，幻觉被显著抑制。\n\n**② 上下文压缩（Context Compression）**\n\n- **原理**：粗召+重排后喂给 LLM 的块仍可能含大量无关句子。无关内容会\"分心\"（distraction）拉低准确率，且白白占 token（成本↑、可能超窗口）。压缩 = 只保留与 query 相关的部分。\n- **实现**三类：\n  - **抽取式**：用 LLM/小模型从块里抽与 query 相关的句子（不改写）；\n  - **摘要式**：对长块生成简短摘要；\n  - **提示压缩**：如 LongLLMLingua，用轻量模型识别\"不重要 token\"直接删。\n- **具体案例**：一篇 50 页 PDF 召回 1 段 8000 token，真正相关的只有\"退款周期为 T+3\"等 3 句；经抽取式压缩成 2000 token 关键句再生成，既省 75% token，准确率反而更高（去噪）。\n\n**③ 反思式检索（Self-RAG / CRAG / Corrective-RAG）** 详见 §11。\n\n- 把\"检索够不够、相关不相关\"的判断交给模型/Agent 自己，不足时主动改写查询或补检索——这是把\"脱钩\"从根上解决，而非事后压缩。\n\n#### 7.4 高级检索结构（解决\"⑤块策略单一\"）\n\n核心矛盾：切块\"小了精准但缺上下文，大了有上下文但噪声多、检索被稀释\"。高级结构用\"检索用小块、生成用大块\"或\"检索用句、生成带窗\"来兼顾。\n\n**① 父子块（small-to-big / 父块-子块）**\n\n- **原理**：同一段内容存两份——**子块**（小，如 100 token，语义聚焦）用于**检索**（匹配准），**父块**（大，如 1000 token，含子块所在整段）用于**生成**（上下文足）。命中子块后回查其所属父块喂 LLM。\n- **实现**：建索引时记录 `(子块文本, 父块 id)`；检索返回子块 id → 用 `父块 id` 取大文本。\n- **具体案例**：技术文档里\"配置端口为 8080\"这句被切为子块，精准命中\"如何改端口\"的查询；生成时回带父块\"第 3 章 网络配置：端口 8080，需开放防火墙…\"整段，答案既准又完整。\n\n**② Sentence-Window（句子窗口）**\n\n- **原理**：以\"句子\"为最小检索单位（最精准），但单句缺上下文；返回时带上该句**前后若干相邻句**组成的\"窗口\"，兼顾精准与连贯。\n- **实现**：建索引时每句作为一个节点，存其前后 window 句；检索命中句子 → 返回 window。\n- **具体案例**：问\"违约金怎么算？\"——句子级检索命中\"违约金为合同额的 5%\"这句，再带上窗口里\"遇不可抗力可豁免\"的相邻句，生成时信息完整不割裂。\n\n**③ 补充：元数据增强分块**：给每个块打来源/时间/章节等元数据，检索时先按元数据过滤（呼应 §7.1③），再在块内精排，进一步降噪。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "Bi-Encoder:  q ──► [Enc] ──► q_vec ──┐\n                                       ●──► cos ──► score\n              d ──► [Enc] ──► d_vec ──┘"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-8",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "RAG 怎么评估？",
+    "keywords": [
+      "Recall@K",
+      "Precision@K",
+      "Hit Rate@K",
+      "Faithfulness",
+      "测幻觉",
+      "Context Recall",
+      "端到端"
+    ],
+    "answer": "RAG 评估要**拆成\"检索\"和\"生成\"两段**，因为一段差了不好定位。\n\n#### 8.1 检索质量指标（Retrieval Metrics）\n\n设总相关文档集合为 `Rel`，检索返回的前 K 个文档为 `R_K`，第 i 个位置文档的相关性记为 `rel_i ∈ {0,1}`（或等级分）。\n\n- **Recall@K（查全率）**：前 K 个里覆盖了多少\"应被召回的相关文档\"。\n  \n  例：共 10 篇相关文档，Top-5 里命中 3 篇 → Recall@5 = 3/10 = 0.3。\n- **Precision@K（查准率）**：前 K 个里\"真正相关\"的占比。\n  ```\n  Precision@K = |Rel ∩ R_K| / K\n  ```\n  Top-5 命中 3 篇 → Precision@5 = 3/5 = 0.6。\n- **Hit Rate@K（命中率）**：至少一个相关文档落在前 K 即记 1，否则 0；对所有查询取平均。\n  ```\n  HitRate@K = (1/Q) Σ_{q=1}^{Q}  I( |Rel_q ∩ R_K^q| ≥ 1 )\n  ```\n  （`I(·)` 是指示函数）——衡量\"用户问题在 Top-K 里至少能找到一篇资料\"的概率。\n- **MRR / Mean Reciprocal Rank（平均倒数排名）**：看\"第一个相关文档排第几\"。\n  ```\n  MRR = (1/Q) Σ_{q=1}^{Q}  1 / rank_q      （rank_q = 第 1 个相关文档的位置）\n  ```\n  例：3 个查询首个相关分别在第 1、第 3、第 2 位 → MRR = (1/1 + 1/3 + 1/2)/3 ≈ 0.61。\n- **NDCG@K / Normalized Discounted Cumulative Gain（归一化折损累计增益）**：考虑\"排位越靠前、权重越大\"，且对相关性分级（不止 0/1）。\n  ```\n  DCG@K  = Σ_{i=1}^{K}  (2^{rel_i} − 1) / log₂(i + 1)\n  IDCG@K = 同样公式，但在\"理想排序\"（相关度高的排最前）下计算\n  NDCG@K = DCG@K / IDCG@K        ∈ [0, 1]\n  ```\n  例：前 3 位相关性 `[2, 0, 1]`（0/1/2 三级）→ DCG = (2²−1)/log₂2 + 0 + (2¹−1)/log₂4 = 3/1 + 0 + 1/2 = 3.5；理想序 `[2,1,0]` → IDCG = 3 + 1/log₂3 + 0 ≈ 3.63；NDCG ≈ 0.96。\n\n#### 8.2 生成质量指标（Generation Metrics，RAGAS 体系）\n\n设 LLM 答案 = `A`，检索上下文 = `C`，标准答案 = `G`。\n\n- **Faithfulness（忠实度）**：答案是否真来自检索上下文（**测幻觉**的核心）。\n  - 思路：把 A 拆成若干陈述句，逐句判断\"能否被 C 支撑\"，`忠实度 = 被支撑句数 / 总句数`。\n- **Answer Relevance（答案相关性）**：有没有答到问题。\n  - 思路：用 LLM 从 A 反推几个问题，再算这些问题与原始 query 的语义相似度，取平均。\n- **Context Precision（上下文精排度）**：检索到的相关内容，是否排在前面。\n  - `CP@K = (1 / |相关块数|) Σ_{k=1}^{K}  (Precision@k × I(第k块相关))`\n- **Context Recall（上下文查全度）**：标准答案 G 所需的事实，在检索上下文 C 里覆盖了多少。\n  - 思路：标注 C 中每个块对\"生成 G\"是否必要，必要块被召回的比例即 Context Recall。\n\n**端到端**：用 LLM 当裁判（LLM-as-Judge）或人工评\"是否有用、是否正确、是否引用准确\"。RAGAS 实操见 §15。\n\n## 🧩 模块三 · 进阶 RAG 系列（升级形态）\n\n> 从“单点检索”走向“图 / 反思 / 智能体”：知识图谱增强、反思式检索、重排选型、生产部署、长上下文取舍、评测实操、Agentic RAG。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "  Recall@K = |Rel ∩ R_K| / |Rel|\n  "
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-9",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "GraphRAG 简介（传统 RAG 的短板补丁）",
+    "keywords": [
+      "传统 RAG 短板",
+      "聚合",
+      "GraphRAG 核心想法",
+      "知识图谱 KG",
+      "为什么有效",
+      "社区检测",
+      "社区摘要",
+      "两路检索"
+    ],
+    "answer": "#### 9.1 原理：为什么传统向量检索答不了\"全局/关系\"问题\n\n- **传统 RAG 短板**：向量检索是\"扁平\"的——每个 chunk 各自独立编码，检索只做 chunk 级相似度。它擅长**单点事实问答**（\"某句话在哪\"），但**跨文档全局摘要、实体关系推理**弱。例如\"公司里和张三合作过的人有哪些？\"需要把分散在多份文档的\"张三—项目A—李四\"\"张三—项目B—王五\"关系**聚合**起来，Top-K 相似 chunk 做不到（答案分散、需多跳）。\n- **GraphRAG 核心想法**：把语料从\"文本集合\"变成\"**知识图谱 KG**\"——节点=实体（人/组织/概念/事件），边=关系（合作/属于/导致…）。检索时**不只找相似 chunk，还能沿图\"游走/遍历\"**，从而回答需要多跳推理与全局聚合的问题。\n- **为什么有效**：全局性问题（\"整个语料里谁和谁关系最紧密\"）无法靠 Top-K 相似 chunk 回答——答案分散多处、需聚合；KG + 图算法（社区检测 / PageRank）能先\"总结\"再答。\n\n#### 9.2 实现思路（以微软开源 GraphRAG，2024 为例）\n\n1. **实体/关系抽取**：用 LLM 从每个 chunk 抽三元组 `(实体, 关系, 描述)` → 汇总构建 KG。\n2. **社区检测（Leiden 算法）**：把 KG 分成若干\"紧密相连的实体群\"（社区）。\n3. **社区摘要**：用 LLM 对每个社区生成一段自然语言摘要（\"这个社区讲了什么\"）。\n4. **两路检索**：\n   - **局部检索（local）**：给定 query 实体，沿 KG 找相关实体+关系（类似传统 RAG，但带图结构，可多跳）；\n   - **全局检索（global）**：直接用**社区摘要**做 RAPTOR 式\"先总结后检索\"，回答全局性问题。\n5. **生成**：把图检索结果 + 社区摘要喂 LLM 生成最终答案。\n\n**流程图（mermaid）**：\n\n```mermaid\nflowchart LR\n    D[原始文档] --> C[切分 Chunk]\n    C --> E[\"LLM 抽取三元组: 实体-关系\"]\n    E --> KG[知识图谱 KG]\n    KG --> L[Leiden 社区检测]\n    L --> S[LLM 社区摘要]\n    Q[Query] --> R1[局部检索: 图遍历]\n    Q --> R2[全局检索: 社区摘要]\n    R1 --> Gen[LLM 生成]\n    R2 --> Gen\n```\n\n#### 9.3 具体案例\n\n- **案例 A（全局摘要）**：\"过去一年公司发生了哪些重大组织变动？\"——传统 RAG 召回零散新闻 chunk，答不全且易漏；GraphRAG 用社区摘要**聚合全库**，给出结构化总结。\n- **案例 B（关系推理/多跳）**：\"张三怎么和李四产生业务交集？\"——沿 KG 找路径 `张三 → 项目X → 李四`，多跳推理出\"两人通过项目 X 合作\"，传统 RAG 单 chunk 无法串联。\n- **案例 C（出处）**：微软开源 **GraphRAG（2024）** 用\"LLM 抽取 + Leiden 社区 + 社区摘要\"，在 *query-focused summarization* 任务上显著优于 vanilla RAG。后续 **LightRAG（2024）** 进一步用\"实体层/关系层\"双索引 + 增量更新，建图更轻、支持动态语料。\n\n#### 9.4 代价与适用\n\n- **代价**：建图依赖 LLM 抽取（贵、慢）、KG 更新难、存储大。\n- **适用**：知识密度大、需要**跨文档全局摘要 / 关系推理**的场景（企业知识库、科研文献、法规条款）；纯单点 QA 用普通 RAG 更划算。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-11",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "反思式检索（Self-RAG / CRAG / Corrective-RAG）",
+    "keywords": [
+      "思想",
+      "自己决定",
+      "流程",
+      "vs Naive RAG",
+      "置信度评估",
+      "网络检索",
+      "机制",
+      "知识精炼"
+    ],
+    "answer": "核心目标：补 7.0 的 **④ 检索与生成脱钩**——让生成过程\"自我反思/自我纠正\"，而不是无脑\"先检索全部再生成\"。\n\n#### 11.1 Self-RAG（2023, Asai et al.）\n\n- **思想**：训练一个\"会输出反思 token（Reflection Token）\"的模型。生成时模型**自己决定**要不要检索、检索到的好不好、自己说的有没有依据。\n- **四类反思标记**：\n  - `Retrieve`：此刻是否需要检索（按需，不是全程一次检完）；\n  - `IsRel`：检索到的段落是否相关；\n  - `IsSup`：我刚说的这句话，是否被检索内容支撑（测忠实度）；\n  - `IsUse`：这个段落对回答有没有用。\n- **流程**：生*成时模型先打出 `[Retrieve]` → 触发检索 → 段落回*灌 → 模型打 `[IsRel: relevant]` 等 → 继续生成并带引用。\n- **关键点**：把\"检索决策\"和\"质量评估\"变成模型自产的特殊 token，端到端训练（用蒸馏+标准 criteria）。\n- **vs Naive RAG**：Naive 是无脑\"先检全部再生成\"；Self-RAG 是\"生成中按需检索 + 自评\"，减少无关检索噪声、提升忠实度。\n\n#### 11.2 CRAG / Corrective-RAG（2024, Yan et al.）\n\n- **注**：文献里 **CRAG = Corrective Retrieval Augmented Generation**，两者同源（用户把它们并列，这里统一说明：CRAG 即 Corrective-RAG，是\"纠正式检索\"这条路线的代表）。\n- **思想**：对检索结果做**置信度评估**，分三档决策：\n  - 相关（relevant）→ 直接用；\n  - 模糊/不确定（ambiguous）→ 触发**网络检索（web search）**&#x8865;充；\n  - 不相关（irrelevant）→ 丢弃并重检。\n- **机制**：用一个轻量\"检索评估器\"（T5-base 三分类）判断 query↔文档相关性；再做**知识精炼**——把段落切成句子级，只保留支撑句，降噪。\n- **vs Self-RAG**：CRAG 用**独立评估器**做纠正（不靠主模型自评）；Self-RAG 让主模型自己打分。\n\n#### 11.3 广义\"反思/纠正式\"范式\n\n把以上归为一类：**边生成边校验、不足则补**。工程上常见三种落地形态：\n\n| 范式   | 决策谁来做                | 纠正手段                 | 典型代表                  |\n| ---- | -------------------- | -------------------- | --------------------- |\n| 自反思  | 主模型打 token           | 自评相关性/支撑性            | Self-RAG              |\n| 置信校正 | 独立评估器                | 三档决策 + web 补充 + 句子精炼 | CRAG / Corrective-RAG |\n| 反思循环 | Agent（ReAct/Planner） | 改写查询 / 多跳重检          | Agentic RAG（§16）      |",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-12",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "重排模型选型（Cross-Encoder 家族 / 何时用 ColBERT）",
+    "keywords": [
+      "选型口诀",
+      "为什么存在",
+      "各自",
+      "token 级向量",
+      "最匹配",
+      "优点",
+      "离线预计算",
+      "代价"
+    ],
+    "answer": "#### 12.1 Cross-Encoder 重排模型家族\n\n| 模型                            | 来源               | 特点 / 适用                             |\n| ----------------------------- | ---------------- | ----------------------------------- |\n| `ms-marco-MiniLM-L-6-v2`      | Cross-Encoder 经典 | 6 层、轻量、快，英文；`project-python` 用的就是这个 |\n| `bge-reranker-base / large`   | BAAI             | 中英强，生产中文首选                          |\n| Cohere Rerank / Jina Reranker | 商业 API           | 求省事、免部署，按量计费                        |\n| RankGPT                       | 用 LLM 当 reranker | listwise（一次排整个列表），最准但最慢             |\n\n**选型口诀**：延迟敏感 → MiniLM；中文优先 → bge-reranker；求省事 → Cohere/Jina API；要极致质量且不计成本 → RankGPT。\n\n#### 12.2 ColBERT（Contextualized Late Interaction）——介于双塔与交叉之间\n\n- **为什么存在**：Bi-Encoder 快但不准（§7.2），Cross-Encoder 准但慢（每个 `(q,d)` 都要前向）。ColBERT 取中间路线。\n- **Late Interaction（延迟交互）**：query 和 doc **各自**过 BERT 得到 **token 级向量（multi-vector）**，检索时才做 token 间交互。\n- **数学**：\n  \n  即：query 每个 token 向量 `q_i`，在 doc 的所有 token 向量里找**最匹配**的那个（max），再把所有 query token 的匹配值求和。\n- **优点**：doc 的 token 向量可**离线预计算**存库（像 Bi-Encoder 快），又保留 token 级细粒度匹配（像 Cross-Encoder 准）。\n- **代价**：存储是\"每篇文档 × 每句 token 向量\"，内存大；ColBERTv2 用**残差压缩**把存储压到原来的 ~1/10。\n- **何时用**：文档库大、要\"又快又比 Bi-Encoder 准\"、又不愿为每个 query 跑 Cross-Encoder 时。\n\n**为什么\"恰好在中间\"——从交互粒度看三者差异**：\n\n| 维度          | Bi-Encoder   | ColBERT                              | Cross-Encoder         |\n| ----------- | ------------ | ------------------------------------ | --------------------- |\n| doc 表示      | 1 个向量（信息瓶颈大） | token 级向量（multi-vector）              | 与 query 拼接            |\n| 交互发生在       | 最后 1 次点积     | 检索时 token 级 max 求和（late interaction） | Transformer 内全注意力     |\n| 能否离线预计算 doc | ✅            | ✅（token 级）                           | ❌                     |\n| 交互充分度       | 最弱           | 中（token 粒度）                          | 最强（逐 token 互相 attend） |\n| 速度          | 最快           | 中                                    | 最慢                    |\n\n- **Bi-Encoder**：整篇 doc 压成 1 个向量 `d_vec`，与 `q_vec` 只做 1 次点积 `f(q)ᵀg(d)`。doc 里\"退款\"和\"退货\"的细微差别全被平均掉（信息瓶颈），但 doc 向量可离线预计算，最快。\n- **Cross-Encoder**：query 和 doc **拼一起过完整 Transformer**，query×doc 的每个 token 互相做注意力（注意力矩阵 q×d），交互最充分、最准；但必须在线拼一起算，无法预计算 doc，最慢（O(K·L)）。\n- **ColBERT（中间）**：query、doc **各自**过 BERT 得 **token 级向量**，**离线预计算 doc 的 token 向量**（像 Bi-Encoder 快）；检索时再做 **token 级 late interaction**——每个 query token 在 doc 的所有 token 里找最匹配的那个（max）再求和。它**保住了 token 粒度的细交互**（像 Cross-Encoder 准），却**不必在线跑完整 Transformer**（只算向量最大相似度，便宜）。\n\n> 一句话定位：**Bi-Encoder 用\"1 个向量 + 1 次点积\"换速度；Cross-Encoder 用\"完整注意力\"换精度；ColBERT 用\"token 级向量 + late interaction\"把\"可预计算\"和\"token 级交互\"兼得**——所以速度接近 Bi-Encoder、精度接近 Cross-Encoder，正好在中间。\n\n**三者取舍**：\n\n|                   | 速度 | 精度 | 能否预计算 doc  | 存储        |\n| ----------------- | -- | -- | ---------- | --------- |\n| Bi-Encoder（向量检索）  | 最快 | 较弱 | ✅          | 小         |\n| ColBERT（延迟交互）     | 中  | 较强 | ✅（token 级） | 大（需压缩）    |\n| Cross-Encoder（重排） | 最慢 | 最强 | ❌          | 小（不存 doc） |",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "  score(q, d) = Σ_{i ∈ q}  max_{j ∈ d}  ( q_i · d_j )\n  "
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-13",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "生产部署（向量库选型 / ANN 参数 / 缓存 / 流式）",
+    "keywords": [
+      "FAISS",
+      "Milvus",
+      "pgvector",
+      "选型",
+      "HNSW",
+      "IVF",
+      "混合/压缩",
+      "经验"
+    ],
+    "answer": "#### 13.1 向量库选型（Milvus vs pgvector vs FAISS）\n\n| 向量库          | 形态                      | 规模       | 元数据过滤           | 运维          | 适用              |\n| ------------ | ----------------------- | -------- | --------------- | ----------- | --------------- |\n| **FAISS**    | Facebook 纯库（C++/Python） | 单机、内存索引  | 弱（需自己写）         | 无服务，自己包     | 研究 / 离线 / 小库    |\n| **Milvus**   | 分布式向量数据库                | 十亿级      | 强（标量字段过滤）       | 重（独立服务/多容器） | 大规模生产首选         |\n| **pgvector** | Postgres 扩展             | 中小（< 千万） | 天然（SQL `WHERE`） | 轻（复用 PG）    | 已有 PG、要事务/权限/过滤 |\n\n**选型**：已有 PG 且规模中 → pgvector（部署最简单、过滤最强）；大规模高并发 → Milvus；研究/单机 → FAISS。\n\n#### 13.2 ANN 索引参数（HNSW / IVF 进阶）\n\n- **HNSW**（§7.2）：`M`（邻居边数，大→准/占内存）、`efSearch`（搜索候选数，大→准/慢）、`efConstruction`（建图候选数）。\n- **IVF**（§7.2）：`nlist`（总簇数）、`nprobe`（查几个簇，大→准/慢）。\n- **混合/压缩**：`IVF-PQ`（加乘积量化压缩存储，省内存）、`IVF-HNSW`（用 HNSW 做 coarse 量化加速 IVF）。\n- **经验**：召回率要求高 → 调大 `efSearch` / `nprobe`；内存紧 → 降 `M` 或上 PQ。\n\n#### 13.3 缓存\n\n- **语义缓存**：对相同/高度相似 query，**缓存其检索结果 + 生成结果**。命中判断用\"query 向量近邻\"而非精确字符串匹配，避免\"同义不同字\"重复计算。\n- 价值：省检索 + 省 LLM 调用，首字延迟和成本双降。\n\n#### 13.4 流式（Streaming）\n\n- LLM 生成走流式（token-by-token，SSE/流式接口），检索端可并行或先完成。\n- RAG 典型时序：**先检索（可缓存）→ 再流式生成**。流式把\"首字延迟 TTFT\"压到检索完成 + 第一个 token 的时间，体验远好于等全文生成完。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-14",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "RAG vs 长上下文（取舍与最新结论）",
+    "keywords": [
+      "背景",
+      "中间部分",
+      "RAG + 长上下文结合最好",
+      "取舍维度",
+      "取代",
+      "长上下文是 RAG 的增强"
+    ],
+    "answer": "**背景**：128k/200k/1M token 长上下文模型兴起，出现\"直接把整个库塞进去，还要 RAG 吗？\"\n\n- **Lost in the Middle（Liu et al., 2023）**：LLM 对长上下文**中间部分**信息利用差——关键信息在中间时准确率明显掉。\n- **\"RAG vs Long Context\"（Yu et al., 2024, arXiv:2407.01282 等系列结论）**：\n  - 纯长上下文：信息一多模型易\"分心\"，且中间丢失严重；\n  - **RAG + 长上下文结合最好**；\n  - 长上下文适合\"少量长文档精读\"，RAG 适合\"海量文档大海捞针\"。\n- **取舍维度**：\n\n| 维度   | 长上下文          | RAG      |\n| ---- | ------------- | -------- |\n| 成本   | 巨大 KV cache，贵 | 只喂相关块，省  |\n| 溯源   | 无（一次性塞入）      | 有（引用具体块） |\n| 时效性  | 固定快照          | 库可随时更新   |\n| 大海捞针 | 弱（易漏/中间丢）     | 强        |\n\n- **2024–2025 共识结论**：RAG 不会被长上下文**取代**；最佳实践是\"**RAG 检索 + 适度长上下文（8k~32k）承载召回块做推理**\"。一句话面试口径：**长上下文是 RAG 的增强（让你能放更多召回内容做推理），不是替代（解决不了大海捞针、成本和溯源）。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-15",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "RAG 评测脚本与 RAGAS 实操",
+    "keywords": [
+      "实操四步"
+    ],
+    "answer": "#### 15.1 RAGAS（RAG Assessment）框架\n\n- 开源库，用 LLM 自动计算 §8.2 那套指标（Faithfulness / Answer Relevance / Context Precision / Context Recall）。\n- **实操四步**：\n  1. 准备用例：`questions` +（可选）`ground_truth` 答案 + `ground_truth_context`；\n  2. 跑你的 RAG pipeline，得到 `answers` + `retrieved_contexts`；\n  3. 调 `ragas.evaluate(dataset, metrics=[faithfulness, answer_relevance, context_precision, context_recall])`；\n  4. 看报告：faithfulness 低→幻觉/检索不相关；context_recall 低→召回漏；answer_relevance 低→答非所问。\n\n#### 15.2 自写轻量评测脚本（检索段，§8.1 公式落地）\n\n#### 15.3 生成段 / 端到端\n\n- Faithfulness：用 LLM 把答案拆句，逐句判\"能否被上下文支撑\"（见 §8.2）。\n- 端到端：LangSmith / Phoenix 做追踪，或人工标注\"有用/正确/引用准\"。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "# 检索质量：手算 Recall@K / MRR / NDCG@K\ndef recall_at_k(relevant_ids, retrieved_ids, k):\n    hit = len(set(relevant_ids) & set(retrieved_ids[:k]))\n    return hit / len(relevant_ids)                      # 分母=总相关数\n\ndef mrr(relevant_ids_per_q, retrieved_per_q):\n    s = 0.0\n    for rel, ret in zip(relevant_ids_per_q, retrieved_per_q):\n        for i, doc_id in enumerate(ret, 1):             # 1-based 排名\n            if doc_id in rel:\n                s += 1.0 / i; break\n    return s / len(retrieved_per_q)\n\ndef dcg_at_k(rels, k):                                  # rels: 前k位相关性等级[2,0,1]\n    return sum((2**r - 1) / log2(i + 1) for i, r in enumerate(rels[:k], 1))\ndef ndcg_at_k(rels, k):\n    ideal = sorted(rels, reverse=True)\n    return dcg_at_k(rels, k) / dcg_at_k(ideal, k)"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-16",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Agentic RAG（智能体化检索）",
+    "keywords": [
+      "与 Self-RAG 关系",
+      "Self-RAG",
+      "三种模式",
+      "Multi-hop",
+      "Tool-use",
+      "案例",
+      "优点",
+      "缺点"
+    ],
+    "answer": "- **定义**：把 RAG 从\"固定 pipeline\"升级为\"**agent 在循环里调用的工具**\"。Agent 自主决定：何时检索、用什么 query、是否重检索、要不要多跳。\n- **与 Self-RAG 关系**：**Self-RAG（§11.1）是 Agentic RAG 的一种（用特殊 token 决策）**；更广义的 Agentic RAG 用 ReAct/Planner 框架。\n- **三种模式**：\n  - **Router / Planner**：先把复杂问题拆子问题，每子问题分别检索，再综合；\n  - **Multi-hop（多跳）**：检索→读→决定下一个 query（如\"先查 A 的国籍，再查该国首都\"）；\n  - **Tool-use**：检索器作为 agent 的一个 tool，由 LLM 决定调用。\n- **案例**：问\"比较 2023 和 2024 年我们产品退款率变化原因\" → agent 拆成 [查 2023 退款率, 查 2024 退款率, 查政策变更]，分别检索+Rerank，再生成对比。\n- **优点**：复杂/多步/跨文档问答强；**缺点**：多轮调用延迟高、成本大、需设最大步数防失控（呼应 01 章\"必须设最大步数\"）。\n\n## 🧩 模块四 · 代码佐证总览\n\n> `project-python/app/core/rag/` 真实实现了上文所有关键环节。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-03-RAG技术-3-10",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "代码佐证总览（project-python/app/core/rag）",
+    "keywords": [
+      "Q1：RAG 全流程？",
+      "Q3：向量模型怎么选？",
+      "Q6：分块策略有哪些？",
+      "Q7：向量检索 vs 关键词",
+      "Q11：元数据过滤有什么用？",
+      "Q12：RAG 怎么评估？",
+      "Q16：反思式检索三范式",
+      "独立评估器"
+    ],
+    "answer": "| 环节                | 真实类/函数                                                                 | 文件                 |\n| ----------------- | ---------------------------------------------------------------------- | ------------------ |\n| 向量检索（ANN 召回）      | `MultiRetriever.vector_search` / `_search_milvus`（Milvus，L2，nprobe=16） | `retriever.py:172` |\n| 关键词检索（BM25）       | `_BM25Index`（Okapi，k1=1.5,b=0.75）                                      | `retriever.py:47`  |\n| 混合检索 + RRF 融合     | `hybrid_search` / `_rrf_fuse`（k=60）                                    | `retriever.py:262` |\n| 重排（Cross-Encoder） | `Reranker.rerank`（`ms-marco-MiniLM-L-6-v2`）                            | `reranker.py:44`   |\n| 生成 + 引用           | `RAGGenerator.generate` / `_extract_citations`                         | `generator.py:107` |\n\n# Part 2 · 常见问题清单（面试速记）\n\n**Q1：RAG 全流程？**  \nA：离线（文档→切分→Embedding→入库建索引）+ 在线（Query 向量化→召回 TopK→可选 Rerank→拼 Prompt→LLM 生成带引用答案）。检索与入库必须用**同一 Embedding 模型**。\n\n**Q2：为什么\"检索→生成\"远远不够（Naive RAG 缺陷）？**  \nA：查询歧义、召回不精、无重排、生成易脱钩。Advanced RAG 加查询改写/HyDE、混合检索、Rerank、引用、Self-RAG 等。\n\n**Q3：向量模型怎么选？**  \nA：看语言（中文 bge/gte/m3e）、开源/API、维度成本、是否支持 instruction、长文本。检索与入库必须同模型同空间。\n\n**Q4：余弦 / 点积 / L2 区别？**  \nA：余弦看方向（最常用，与长度无关）；点积=方向+长度（归一化后等价余弦）；L2 是欧氏距离越小越近（Milvus 代码默认 L2）。\n\n**Q5：为什么要分块？overlap 干嘛用？块多大？**  \nA：embedding 长文会平均化+粒度+窗口限制。overlap 防边界割裂（10~~20%）。经验 200~~500 token。\n\n**Q6：分块策略有哪些？**  \nA：固定长度、递归字符、按句/段、语义聚类、父子块(small-to-big)、滑动窗口+overlap。父子块=小子块检索、父块生成，兼顾精准与上下文。\n\n**Q7：向量检索 vs 关键词(BM25) 区别？**  \nA：向量=语义相似，能查同义改写但易漏精确专名；BM25=词面+统计权重，精确可解释但查不到同义。BM25 公式含 TF 饱和、长度归一、IDF。\n\n**Q8：为什么需要混合检索？RRF 是什么？**  \nA：向量补语义、BM25 补精确，互补。RRF=倒数排名融合 `Σ1/(k+rank)`，k 常=60，只看排名不看原始分数，鲁棒。\n\n**Q9：为什么检索召回后还要 Rerank？**  \nA：向量召回是 ANN 近似粗排（快但粗、单向相似）；Cross-Encoder 把(q,d)联合编码精排更准但慢。所以\"召回多+重排精\"：先粗召 Top50~100，Cross-Encoder 精排到 Top5。\n\n**Q10：HyDE / 查询改写是什么？**  \nA：查询改写=LLM 把口语问题改写成标准检索问（或多查询）；HyDE=先生成\"理想答案\"再拿答案向量去检索，拉近与文档分布。\n\n**Q11：元数据过滤有什么用？**  \nA：先按时间/来源/权限等字段过滤候选集再检索，大幅降噪、提准、控权限。\n\n**Q12：RAG 怎么评估？**  \nA：检索段看 Recall@K/MRR/NDCG/HitRate；生成段看 Faithfulness(幻觉)、Answer Relevance、Context P/R（RAGAS）；端到端 LLM 裁判或人工。\n\n**Q13：什么是 GraphRAG？解决什么？**  \nA：建知识图谱，补传统 RAG 的跨文档全局摘要/关系推理短板；代价建图成本高。\n\n**Q14：RAG vs 微调怎么选？**  \nA：注入新知识/私有/实时数据→RAG；改风格/能力→微调；常叠加（微调定风格+RAG 供事实）。\n\n**Q15：生产 RAG Pipeline 真实代码有哪些关键模块？**  \nA：`MultiRetriever`（向量/BM25/混合+RRF）、`Reranker`（Cross-Encoder 精排）、`RAGGenerator`（拼 Prompt+生成+引用），分别见 `retriever.py`/`reranker.py`/`generator.py`。\n\n**Q16：反思式检索三范式（Self-RAG / CRAG / Corrective-RAG）区别？**  \nA：都解决\"检索与生成脱钩\"（短板④）。Self-RAG=主模型自己打反思 token（Retrieve/IsRel/IsSup/IsUse），按需检索+自评；CRAG=Corrective-RAG 同源，用**独立评估器**对检索结果分三档（相关→用 / 模糊→补 web 检索 / 不相关→丢弃重检）+ 句子级知识精炼；广义\"反思循环\"= Agent 改写查询/多跳重检（§16）。一句话：Self-RAG 靠主模型自评，CRAG 靠外挂评估器纠正。\n\n**Q17：Cross-Encoder 重排模型怎么选？何时用 ColBERT？**  \nA：延迟敏感→`ms-marco-MiniLM-L-6-v2`；中文→`bge-reranker`；免部署→Cohere/Jina API；极致质量不计成本→RankGPT(listwise)。ColBERT 介于双塔与交叉之间：query/doc 各自出 **token 级向量**（可离线预计算，快），检索时 `score=Σ_i max_j(q_i·d_j)` 做 late interaction（准）。文档库大、要又快又比 Bi-Encoder 准、又不愿每个 query 跑 Cross-Encoder 时用它（存储大，靠 ColBERTv2 残差压缩）。\n\n**Q18：生产向量库怎么选（Milvus/pgvector/FAISS）？HNSW/IVF 参数？**  \nA：FAISS=纯库、单机、无服务、研究/小库；Milvus=分布式、十亿级、过滤强、运维重，大规模首选；pgvector=Postgres 扩展、SQL 过滤天然、中小规模(<千万)最省事。参数：HNSW 调 `M`(边数)/`efSearch`(候选,大→准慢)/`efConstruction`；IVF 调 `nlist`(总簇)/`nprobe`(查几簇,大→准慢)；内存紧上 `IVF-PQ` 压缩。\n\n**Q19：ANN 为什么这么快？IVF/HNSW 原理与取舍？**  \nA：精确最近邻要算 N 个距离 O(N·d)，太慢；ANN 只查\"最可能有近邻\"的一小部分，换几百~上千倍加速。IVF=k-means 聚类，查询只搜最近 `nprobe` 个簇（像按姓氏定位一页再找人）；HNSW=分层图，顶层长边跳转、底层短边精确定位，贪心下降，复杂度 ~O(log N)。代价都是**近似**：Top-K 可能漏真近邻，需 Rerank 兜底。\n\n**Q20：RAG vs 长上下文 怎么取舍？最新结论？**  \nA：长上下文贵(KV cache 大)、无溯源、易\"Lost in the Middle\"(中间信息丢)；RAG 省、可溯源、库可更新、大海捞针强。2024–2025 共识：RAG 不被取代，最佳是\"RAG 检索 + 适度长上下文(8k~32k)承载召回块做推理\"。口径：长上下文是 RAG 的**增强**不是**替代**。\n\n**Q21：RAGAS 怎么评？核心指标公式？**  \nA：RAGAS 用 LLM 自动算：Faithfulness(答案句被上下文支撑比例,测幻觉)、Answer Relevance(由答案反推问题与原 query 相似度)、Context Precision/Recall。检索段手算：Recall@K=|Rel∩R_K|/|Rel|、MRR=(1/Q)Σ1/rank_q、NDCG=DCG/IDCG（DCG=Σ(2^rel−1)/log₂(i+1)）。faithfulness 低→幻觉；context_recall 低→召回漏。\n\n**Q22：Agentic RAG 是什么？和 Self-RAG 关系？**  \nA：把 RAG 从固定 pipeline 升级成\"agent 在循环里调用的工具\"——自主决定何时检索、用什么 query、是否重检索、多跳检索。Self-RAG 是它一种(用 token 决策)；更广义用 ReAct/Planner：Router 拆子问题分别检索、Multi-hop 检索→读→决定下一 query、Tool-use 把检索器当工具。优点=复杂多步跨文档强；缺点=延迟高成本大需设最大步数。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-03-RAG技术"
+    ],
+    "tags": [
+      "RAG技术"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-03-RAG技术",
+      "file": "03-RAG技术.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-07-大模型基础-2-1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Transformer 架构与核心组件",
+    "keywords": [
+      "串行",
+      "整体结构",
+      "只保留 Decoder 栈",
+      "Add & Norm",
+      "Feed-Forward"
+    ],
+    "answer": "**为什么需要它**：2017 年论文《Attention Is All You Need》提出。在此之前主流是 RNN/LSTM，它们**串行**读序列（一个词一个词往后传），导致两个问题：\n\n1. **难以并行训练**\n2. **长程依赖难捕获：**&#x524D;面词的信息传到很后面会衰减。\n\nTransformer **完全基于注意力机制**，任意两个词可直接连通、可全程并行，从此把模型做深做大成为可能。\n\n**整体结构**（原始论文是 Encoder–Decoder，但现代大模型几乎只用 Decoder 部分）：\n\n> 注：你面试遇到的「大模型」（GPT/LLaMA/通义/文心等）基本都是**只保留 Decoder 栈**的Decoder-only 结构，没有 Encoder、也没有交叉注意力。\n\n**核心组件逐个讲**：\n\n| 组件                                    | 一句话作用                                                              |\n| ------------------------------------- | ------------------------------------------------------------------ |\n| **Input Embedding**                   | 把 token（词片）的 id 查表映射成连续向量，让模型能在向量空间里算相似度                           |\n| **Positional Encoding（位置编码）**         | Transformer 本身是「全连接+注意力」，自身没有顺序概念；位置编码把「第几个词」这个信息注入进去（正弦/可学习/RoPE） |\n| **Multi-Head Self-Attention（多头自注意力）** | 让每个词同时「看」序列里所有词，按相关性聚合信息；多头=并行多组视角                                 |\n| **Add & Norm（残差 + 层归一化）**             | 残差连接解决深层网络退化；LayerNorm 把每层的数值分布拉稳，训练更稳更快                           |\n| **Feed-Forward（前馈网络，FFN）**            | 每个位置独立过两层 MLP，做非线性加工/「知识消化」                                        |\n| **Linear + Softmax（输出头）**             | 把最后隐藏向量映射到词表大小，Softmax 得到每个词作为「下一个词」的概率                            |",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "输入文本 → [Embedding + 位置编码]\n         → Encoder 栈(×N): 多头自注意力 → Add&Norm → FFN → Add&Norm\n         → Decoder 栈(×N): (因果)多头自注意力 → Add&Norm → 交叉注意力 → Add&Norm → FFN → Add&Norm\n         → Linear + Softmax → 词表概率分布"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-07-大模型基础"
+    ],
+    "tags": [
+      "大模型基础"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-07-大模型基础",
+      "file": "07-大模型基础.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-07-大模型基础-2-2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "自注意力机制（Self-Attention）+ 手撕代码",
+    "keywords": [
+      "直觉",
+      "按权重聚合",
+      "Q / K / V 是什么",
+      "Q",
+      "K",
+      "V",
+      "$QK^\\top$",
+      "$/\\sqrt{d_k}$"
+    ],
+    "answer": "**直觉**：一句话里每个词，去「看」其他所有词，根据相关性（注意力分数）把别人携带的信息**按权重聚合**到自己身上。于是每个词的表示都融合了全局上下文——这正是它比 RNN 强的地方。\n\n**Q / K / V 是什么**\n\n- **Q（Query，查询）**：「我当前这个词，在找什么样的上下文信息」\n- **K（Key，键）**：「我这个词的索引/标签，用来被别人的 Q 检索匹配」\n- **V（Value，值）**：「我这个词真正携带的信息内容」\n\n**公式逐符号讲**  \n$\\text{Attention}(Q,K,V)=\\text{softmax}\\!\\left(\\frac{QK^\\top}{\\sqrt{d_k}}\\right)V$\n\n1. **$QK^\\top$**：每个 Query 和每个 Key 做点积 → 相关性/相似度分数，得到 $(L,L)$ 分数矩阵（L=序列长度）。\n2. **$/\\sqrt{d_k}$**：缩放。维度 $d_k$ 越大，点积数值越大，softmax 容易「一家独大」导致梯度消失；除以维度的平方根让数值方差保持稳定。\n3. **softmax**：把每一行分数归一化成权重（每行和为 1），代表「这个词该从别人那取多少信息」。\n4. **$\\cdot V$**：用权重对 Value 加权求和 → 输出每个位置融合了全局上下文的新表示。\n\n**多头（Multi-Head）**：把 Q/K/V 线性投影成 $h$ 份，各自独立算一遍注意力，再把结果拼接+线性变换。好处是模型能**同时**关注不同类型的关系（语法/语义/远近/指代）。\n\n### 🔧 手撕代码（NumPy，可直接运行，无深度学习框架依赖）\n\n> 跑通后你会看到：注意力权重矩阵每行和≈1（softmax 性质），且上三角被 -∞ 压成 0（因果掩码生效）。这就是「自回归」不可看未来的数学实现。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "import numpy as np\n\ndef softmax(x, axis=-1):\n    x = x - np.max(x, axis=axis, keepdims=True)   # 防溢出\n    e = np.exp(x)\n    return e / np.sum(e, axis=axis, keepdims=True)\n\ndef single_head_attention(x, Wq, Wk, Wv, mask=None):\n    # x: (L, d_model)   Wq/Wk/Wv: (d_model, d_k)\n    Q = x @ Wq                       # (L, d_k)\n    K = x @ Wk\n    V = x @ Wv\n    d_k = Q.shape[-1]\n    scores = (Q @ K.T) / np.sqrt(d_k)          # (L, L) 相关性矩阵\n    if mask is not None:\n        scores = np.where(mask == 0, -1e9, scores)   # 因果掩码：未来位置置 -∞\n    attn = softmax(scores, axis=-1)            # 每行权重，和为1\n    out = attn @ V                             # (L, d_k) 加权聚合\n    return out, attn\n\ndef causal_mask(L):\n    # 下三角=1（能看），上三角=0（看不到未来）\n    return np.tril(np.ones((L, L)))\n\ndef layer_norm(x, eps=1e-5):\n    mu = x.mean(axis=-1, keepdims=True)\n    var = x.var(axis=-1, keepdims=True)\n    return (x - mu) / np.sqrt(var + eps)\n\ndef transformer_block(x, Wq, Wk, Wv, W1, W2, mask=None):\n    # 教学简化版单头：注意力 + 残差 + LN + FFN + 残差 + LN\n    attn_out, _ = single_head_attention(x, Wq, Wk, Wv, mask)\n    x = layer_norm(x + attn_out)               # 残差 + 归一\n    ff = x @ W1 @ W2                           # 两层线性（示意，省略激活）\n    x = layer_norm(x + ff)                      # 残差 + 归一\n    return x\n\nif __name__ == \"__main__\":\n    np.random.seed(0)\n    L, d_model, d_k, d_ff = 5, 8, 8, 16\n    x = np.random.randn(L, d_model)\n    Wq = np.random.randn(d_model, d_k)\n    Wk = np.random.randn(d_model, d_k)\n    Wv = np.random.randn(d_model, d_k)\n    W1 = np.random.randn(d_model, d_ff)\n    W2 = np.random.randn(d_ff, d_model)\n\n    out, attn = single_head_attention(x, Wq, Wk, Wv, mask=causal_mask(L))\n    print(\"注意力权重形状:\", attn.shape, \"| 每行和 =\", np.round(attn.sum(1), 3))\n    y = transformer_block(x, Wq, Wk, Wv, W1, W2, mask=causal_mask(L))\n    print(\"Transformer Block 输出形状:\", y.shape)"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-07-大模型基础"
+    ],
+    "tags": [
+      "大模型基础"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-07-大模型基础",
+      "file": "07-大模型基础.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-07-大模型基础-2-3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Encoder-only / Decoder-only 代表模型及区别",
+    "keywords": [
+      "Encoder-only",
+      "双向",
+      "Decoder-only",
+      "因果",
+      "Scaling 友好",
+      "Encoder 懂「是什么」"
+    ],
+    "answer": "| 类型                  | 代表模型                     | 注意力                 | 预训练目标         | 擅长                | 不擅长         |\n| ------------------- | ------------------------ | ------------------- | ------------- | ----------------- | ----------- |\n| **Encoder-only**    | BERT、RoBERTa             | **双向**（能看到前后所有词）    | MLM（随机遮词猜原词）  | 理解/分类/NER/检索等 NLU | 自由生成        |\n| **Decoder-only**    | GPT 系列、LLaMA、Qwen、Claude | **因果**（只能看前面，不能看未来） | CLM（预测下一个词）   | 对话/写作/代码/推理等生成    | 双向理解（非其主战场） |\n| **Encoder-Decoder** | T5、BART                  | 编码端双向 + 解码端因果       | 破坏-重建/Seq2Seq | 翻译/摘要/改写          | 超大规模通用对话    |\n\n**为什么 Decoder-only 成了当今大模型主流？**\n\n1. **生成天然匹配**：CLM 目标「预测下一个词」直接对应对话/写作的「自回归生成」需求。\n2. **Scaling 友好**：结构统一、易堆参数、易做长上下文与 RLHF 对齐。\n3. **数据利用效率**：海量的「下一句预测」无标注文本随处可得，预训练语料近乎无限。\n\n> 记忆口诀：**Encoder 懂「是什么」（理解），Decoder 会「写什么」（生成）**。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-07-大模型基础"
+    ],
+    "tags": [
+      "大模型基础"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-07-大模型基础",
+      "file": "07-大模型基础.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-07-大模型基础-2-4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "大模型输入文本 → 输出的完整运行机制",
+    "keywords": [
+      "Tokenization",
+      "LM Head",
+      "logits",
+      "Softmax → 概率分布",
+      "解码采样",
+      "自回归循环",
+      "EOS",
+      "Detokenize"
+    ],
+    "answer": "把一句话喂给大模型，到它吐出回答，内部是这样一条流水线：\n\n1. **Tokenization（分词）**：文本按 BPE/WordPiece 切成 token（子词/字片），再映射成 id。中文常切成字或词片。\n2. **Embedding + 位置编码**：id 查表成向量，叠加位置信息 → 得到初始隐藏表示。\n3. **堆叠 Transformer 层（×N）**：每一层依次做「(因果)自注意力 + 残差/LN + FFN + 残差/LN」，逐层把信息抽象、融合。层数越深，语义越高级。\n4. **LM Head（输出头）**：取最后一层隐藏向量 → 过一个 Linear 层 → 得到 **logits**（词表大小的分数，每个词「作下一个词」的原始打分）。\n5. **Softmax → 概率分布**：logits 过 softmax 变成每个候选词的概率。\n6. **解码采样**：按策略选下一个 token——\n   - 贪婪（greedy）：永远选概率最高的；\n   - Top-k / Top-p：只在概率最高的前 k 个 / 累计概率 p 内采样，增加多样性；\n   - 温度（temperature）：调高让分布更平、更随机，调低更确定。\n7. **自回归循环**：把刚选出的 token 拼回序列末尾，回到第 3 步重新跑，直到生成 **EOS（结束符）** 或达到最大长度。\n8. **Detokenize（解码）**：生成的 token id 序列反查词表，拼回人类可读文本。\n\n> 一句话：**文本→token→向量(+位置)→多层注意力+FFN提炼→打分→采样出下一个词→循环直到结束**。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-07-大模型基础"
+    ],
+    "tags": [
+      "大模型基础"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-07-大模型基础",
+      "file": "07-大模型基础.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-07-大模型基础-2-5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "KV Cache（键值缓存）",
+    "keywords": [
+      "已经算过",
+      "机制",
+      "收益",
+      "代价",
+      "线性增长",
+      "Q3：为什么要缩放",
+      "Q8：什么是自回归"
+    ],
+    "answer": "**它解决什么问题**：自回归每生成一个新 token，理论要把「之前所有 token」的 Key 和 Value 重新算一遍。但前面 token 的 K、V 在上一轮**已经算过**了——重复计算极浪费，复杂度会退化成 $O(n^2)$ 且延迟随长度飙升。\n\n**机制**：生成过程中，把**每一层、每一个已生成 token 的 K 和 V 矩阵缓存**下来（即 KV Cache）。每来一个新 token，只计算它自己的 Q，然后拿这个 Q 去和缓存里所有历史 K/V 做注意力——**不再重算历史**。\n\n**收益**：\n\n- 每步从「对全序列重算注意力」降为「只算新 token 的 Q + 一次查表式注意力」，大幅降低延迟、提升吞吐。\n- 是推理提速的基石（配合批处理、投机解码等）。\n\n**代价**：\n\n- 缓存随序列长度**线性增长**，占用显存；长上下文 / 高并发时要做显存管理。\n- 这也是「上下文窗口有限、长文本贵」的核心原因之一。\n\n> 类比：写论文时把前面每段的提纲记在便签上（K/V 缓存），写新一段只需看便签、不必重读全文——快，但便签越贴越多占桌面。\n\n# Part 2 · 常见问题清单（面试速记）\n\n> 本清单由 Part 1 基础知识初始化，用于面试前快速过一遍。你后续提供的针对性问题可继续追加到本节。\n\n**Q1：为什么需要 Transformer？它解决了 RNN 的什么问题？**  \nA：RNN 串行、难并行、长程依赖衰减；Transformer 用注意力让任意两词直接连通、可全程并行，支持把模型做深做大。\n\n**Q2：Self-Attention 公式及每个符号？**  \nA：`softmax(QKᵀ/√dₖ)V`。QKᵀ=相关性分数矩阵；÷√dₖ=缩放防梯度消失；softmax=归一化权重；·V=按权重聚合 Value。\n\n**Q3：为什么要缩放（÷√dₖ）？**  \nA：dₖ 大时点积数值大，softmax 趋近 one-hot，梯度消失；除以维度平方根稳定方差。\n\n**Q4：多头注意力为什么要多头？**  \nA：并行多组 Q/K/V，让模型同时捕捉不同类型关系（语法/语义/远近/指代）。\n\n**Q5：位置编码干嘛用？RoPE 是什么（一句话）？**  \nA：Transformer 本身无顺序感，位置编码注入「第几个词」。RoPE（旋转位置编码）把位置信息编码成向量旋转，使注意力天然感知相对位置，是 LLaMA 等主流模型采用的方式。\n\n**Q6：Encoder-only 和 Decoder-only 区别？各代表？**  \nA：Encoder-only（BERT）双向注意力+MLM，擅长理解/NLU；Decoder-only（GPT/LLaMA/Qwen）因果注意力+CLM，擅长生成。当今大模型主流是 Decoder-only。\n\n**Q7：大模型从输入到输出全流程？**  \nA：分词→Embedding+位置→N层注意力+FFN→LM Head 得 logits→softmax 概率→采样下一 token→自回归循环至 EOS→解码成文本。\n\n**Q8：什么是自回归（auto-regressive）？**  \nA：用已生成的内容作为下一步的输入，逐 token 生成；每一步只能看前面、不能看未来（因果掩码保证）。\n\n**Q9：KV Cache 是什么、解决什么、代价？**  \nA：缓存每层每 token 的 K/V，新 token 只算自己的 Q 去查缓存，避免重算历史；大幅降延迟；代价是显存随序列线性增长。\n\n**Q10：为什么 Decoder-only 成为大模型主流？**  \nA：生成目标(CLM)天然匹配对话/写作需求；结构统一易 Scaling；无标注「下一词预测」语料近乎无限。\n\n## 待补充（后续从你的问题继续扩展）\n\n- 预训练 / SFT / RLHF 各自训什么、目标函数（可补到 Part 1/Part 2）\n- 注意力可视化图解\n- 推理加速技术对比表（量化 / 投机解码 / 模型并行 / 蒸馏）\n- 长上下文处理（分块 / 长上下文模型 / 位置插值）",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-07-大模型基础"
+    ],
+    "tags": [
+      "大模型基础"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-07-大模型基础",
+      "file": "07-大模型基础.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-08-工程化实践-ext1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "请解释超时、重试、幂等的区别与联系，工程中如何正确配合这三者？",
+    "keywords": [
+      "A",
+      "区别",
+      "联系",
+      "工程配合",
+      "指数退避",
+      "随机抖动",
+      "代码佐证"
+    ],
+    "answer": "**A：**\n- **区别**：超时 = 主动放弃、止损；重试 = 失败后补救；幂等 = 同一请求执行多次结果一致（不重复扣/发），保安全。\n- **联系**：超时 → 不知对方是否执行 → 想重试 → 但可能重复执行 → **重试的前提是幂等**。\n- **工程配合**：幂等在设计阶段就铺好（安全网）；运行时超时按指数退避去重试（兜底）。不是\"先不做幂等、超时了才做\"。\n- **指数退避**：间隔翻倍（1/2/4/8s），越失败越慢，给下游恢复时间。\n- **随机抖动**：加随机错开节奏，避免大量客户端同时重试形成\"重试风暴\"打垮下游。\n\n**代码佐证**：`project-python/app/infrastructure/llm/circuit_breaker.py` 是\"超时/重试/熔断\"三件套的落点之一——下游持续失败时限流直接拦住请求，避免无意义重试风暴；它与幂等共同构成稳定性底座。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-08-工程化实践"
+    ],
+    "tags": [
+      "工程化实践"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-08-工程化实践",
+      "file": "08-工程化实践.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-10-大模型微调-2-1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "为什么需要微调（Fine-tuning）",
+    "keywords": [
+      "预训练 vs 微调，一句话版",
+      "预训练",
+      "微调",
+      "全量微调",
+      "显存爆炸",
+      "灾难性遗忘",
+      "优化器",
+      "84 GB"
+    ],
+    "answer": "**预训练 vs 微调，一句话版**\n\n- **预训练（Pre-training）**：在海量无标注文本上，让模型学会\"语言的统计规律\"（词语关系、语法、常识）。此时模型是\"通才\"，但不知道你具体要干什么。\n- **微调（Fine-tuning）**：在某一特定任务的小数据集上，继续训练模型，让它从\"通才\"变成\"这个任务的专才\"（如客服话术、法律合同抽取、医疗问答）。\n\n**全量微调（Full Fine-tuning）的四大痛点**\n\n1. **显存爆炸**：要存权重 + 梯度 + 优化器状态（Adam 要额外 12 字节/参数）。7B 模型全量微调就要上百 GB 显存，普通卡根本跑不动。\n2. **灾难性遗忘（Catastrophic Forgetting）**：全部参数都被改，模型容易\"学了新的、忘了旧的\"，通用能力掉得厉害。\n3. **过拟合风险高**：任务数据往往很少（几百到几万条），全量参数去拟合，极易过拟合。\n4. **成本高、迭代慢**：每次换任务都要重训全部参数、存一份完整模型副本（7B ≈ 14GB/份），多任务场景下存储和训练成本都不可承受。\n\n> **补充：什么是「优化器状态（12 字节/参数）」？为什么这么吃显存？**\n>\n> **优化器（Optimizer）就是训练时\"反向调整权重\"的算法**：模型前向算出预测，和正确答案对比得到损失（Loss）；反向传播算出每个权重该往哪调（梯度）；**优化器依据梯度去更新权重**。它不只是\"减一下梯度\"，还要维护一些中间状态（一阶动量m，二阶动量v）能调得又快又稳——这些状态就是\"优化器状态\"，每个参数都要额外存一份，所以极占显存。\n>\n> **Adam 为什么是 12 字节/参数**：Adam 为每个参数在 FP32（4 字节）下维护 3 个缓冲区——① 参数本身的 FP32 主副本（混合精度训练需要，2 字节的 FP16 权重只是它的低精度镜像）；② 一阶动量 m（梯度的指数滑动平均）；③ 二阶动量 v（梯度平方的指数滑动平均）。4+4+4 = **12 字节/参数**。7B 模型 → 7B×12 = **84 GB**，这正是 §4.3 表格里\"优化器状态 84GB\"的来历。再加上权重 2B + 梯度 2B ≈ 16B/参数，全量微调总显存 ≈ 16×7B ≈ 112GB。\n>\n> **常见优化器对比（都用来反向调权重，区别在\"怎么调\"）**：\n>\n> | 优化器              | 维护状态                 | 每参数额外显存   | 优势                | 劣势                 | 是否主流     |\n> | ---------------- | -------------------- | --------- | ----------------- | ------------------ | -------- |\n> | **SGD**          | 无（只 w←w−lr·g）        | 0（仅梯度 2B） | 简单、理论清晰           | 收敛慢、对学习率极敏感、易陷局部最优 | 大模型几乎不用  |\n> | **SGD+Momentum** | 1 个速度向量（FP32）        | 4B        | 平滑更新、助于跳出局部最优     | 仍非自适应              | 较少单独用    |\n> | **RMSprop**      | 1 个平方梯度均值（FP32）      | 4B        | 每参数自适应学习率         | 无动量、调参稍麻烦          | 中等       |\n> | **Adam / AdamW** | m + v 两动量 + FP32 主副本 | **12B**   | 自适应+动量，收敛快、对学习率鲁棒 | 显存大（代价）            | **绝对主流** |\n>\n> **Adam 是主流吗？—— 是，几乎是深度学习的默认**。Adam（及其改进 **AdamW**，把权重衰减 L2 正则\"解耦\"处理，防止过拟合）是 transformer / 大模型训练的事实标准：收敛快、省心、对超参不敏感。它唯一代价就是那 12 字节/参数的显存——而 PEFT（只训 A、B 少量参数）恰好让 Adam 的状态从\"84GB\"骤降到\"几 MB\"，这也是 PEFT 能省显存的核心原因之一。\n\n**引出 PEFT**：能不能**冻结大模型主干、只训练极少量参数**，既达到接近全量微调的效果，又省显存、抗遗忘、好存储？这就是 PEFT 要解决的事。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-10-大模型微调"
+    ],
+    "tags": [
+      "大模型微调"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-10-大模型微调",
+      "file": "10-大模型微调.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-10-大模型微调-2-2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "什么是 PEFT（Parameter-Efficient Fine-Tuning，参数高效微调）",
+    "keywords": [
+      "Adapter 类",
+      "LoRA 类",
+      "结构",
+      "计算例子",
+      "优点",
+      "缺点",
+      "适用条件",
+      "Prefix Tuning"
+    ],
+    "answer": "**定义**：冻结预训练模型的绝大部分参数，**只训练少量新增/可学习的参数**，用很小的训练代价把通用模型适配到特定任务。\n\n**三大主流流派**（面试常问，先有个地图）\n\n- **Adapter 类**：在 Transformer 层里插入小的\"瓶颈\"全连接模块，只训这些小模块。\n- **Prefix / Prompt Tuning 类**：在输入前面加一段可学习的\"软提示\"向量，只训这段向量，冻结主干。\n- **LoRA 类**（当前最主流）：不插模块、不加前缀，而是**把权重的\"更新量\"用低秩矩阵近似**，只训这两个小矩阵。本章重点。\n\n### 2.1 Adapter 类（插\"瓶颈\"小模块）\n\n**核心思想**：不改变原模型权重，而是在 Transformer 的每一层里**插入一个很小的全连接\"瓶颈\"模块**（Adapter），微调时只训练这些插入的小模块，原模型全部冻结。典型位置：Attention 之后、FFN 之后各插一个。\n\n**结构**：Adapter = 降维(Linear: d→r) → 非线性激活(ReLU/GELU) → 升维(Linear: r→d)，再加一个残差连接。其中 r ≪ d（如 r=64），所以参数量极小。\n\n**计算例子**：某层隐藏维度 d=4096，Adapter 瓶颈 r=64。\n\n- 全层权重：4096×4096 = 16.78M\n- 一个 Adapter：降维 64×4096 + 升维 4096×64 = 524,288（约全层的 3.1%）\n- 若 32 层各插 2 个 Adapter，总新增 ≈ 32×2×0.52M ≈ 33.6M（仍仅为全量 32×16.78M≈537M 的 ~6%）\n\n**优点**：实现简单、效果稳定、与原模型解耦（插拔方便）。  \n**缺点**：**推理有额外延迟**——Adapter 是串行插在层里的，前向每过一层都要多算两次小矩阵乘，不能像 LoRA 那样合并进原权重\"零延迟\"；层数多时延叠加明显。  \n**适用条件**：对显存敏感、能接受少量推理延迟、想快速试多个任务（插拔成本低）的场景。\n\n### 2.2 Prefix Tuning / Prompt Tuning 类（加\"可学软提示\"）\n\n**核心思想**：不碰模型权重、也不插模块，而是**在输入前面加一段\"可学习的向量\"（软提示 / soft prompt）**，训练时只更新这段向量，让它学会\"用怎样的连续提示最能引导模型完成本任务\"。注意：这些向量不是真实文字，是模型自己学出来的连续 embedding。\n\n**两种主流形态**：\n\n- **Prefix Tuning**：在**每一层**的注意力 K、V 前面都拼一段可学前缀向量（直接\"steering\"注意力的键值）。\n- **Prompt Tuning**（更简化）：只在**最底层输入 embedding** 前面拼一段可学向量，不碰每层 K/V。参数更少、实现更简单，是大模型时代最常用的\"软提示\"方法。\n\n**计算例子（Prompt Tuning）**：设 soft prompt 长度 p=20，隐藏维度 h=4096。\n\n- 可训参数 = 一个矩阵 P ∈ ℝ^{p×h} = 20×4096 = **81,920**（对整个模型而言只有这么点！占 7B 的 ~0.001%）\n- 训练时：把 P 拼到输入 embedding 前，得到 (p+seq_len) 长度序列喂给冻结的模型；反向只更新 P。\n- 对比 Prefix Tuning（每层都加）：p=20, h=4096, 层数 L=32 → 2(K,V)×20×4096×32 ≈ **5.2M**，比 Prompt Tuning 大很多但仍极小。\n\n**优点**：参数极致少（Prompt Tuning 仅几万）、**零推理延迟**（前缀是固定的，可预先算好或一并前向）、不破坏原模型。  \n**缺点**：软提示\"难训\"——小模型上效果不如 LoRA，需要较大 p 或较大基座才稳；可解释性差（学出来的向量人看不懂）。  \n**适用条件**：超大基座（≥7B）做多任务轻量适配、追求极致参数效率、不想改模型结构的场景。\n\n**核心好处（一句话记）**\n\n- 训练参数量小：降到原来的 **0.1%~1%**；\n- 显存小：从\"上百 GB\"降到\"单卡 24GB 甚至 12GB\"；\n- 每个任务只存一份**几 MB~几百 MB 的 LoRA 权重**（底座模型共享），多任务互不干扰、不遗忘；\n- 可插拔。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-10-大模型微调"
+    ],
+    "tags": [
+      "大模型微调"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-10-大模型微调",
+      "file": "10-大模型微调.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-10-大模型微调-2-3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "LoRA（Low-Rank Adaptation，低秩适配）",
+    "keywords": [
+      "ΔW 虽然形状很大",
+      "B ∈ ℝ^{d×r}",
+      "ΔW = B·A",
+      "例子",
+      "8,192",
+      "节省倍数",
+      "32 倍",
+      "参数占比"
+    ],
+    "answer": "### 3.1 核心思想：权重更新量 ΔW 是\"低秩\"的\n\n全量微调的本质是：给原权重 W 加一个更新量 ΔW，得到新权重 W' = W + ΔW。  \nLoRA 的关键假设：**ΔW 虽然形状很大（比如 4096×4096），但它其实可以用两个又瘦又小的矩阵相乘来表示**——即 ΔW = B·A（\"低秩分解\"）。\n\n- W ∈ ℝ^{d×k}（d 行 k 列，原权重，冻结不动）\n- A ∈ ℝ^{r×k}，**B ∈ ℝ^{d×r}**（r 远小于 d、k，叫\"秩/rank\"，通常取 4/8/16/64）\n- 则 **ΔW = B·A** 的秩最多为 r，参数量从 d×k 降到 d×r + r×k\n\n**前向计算变成**：\n\n> h = x · (W + B·A) = x·W + x·B·A\n\n注意：训练时 W 冻结，只更新 A 和 B；x·W 这一项其实可以预先算好或直接复用原模型，新增的开销只是 x·B·A 这条\"旁路\"。\n\n### 3.2 计算例子：参数量到底省多少？\n\n**例子（小维度，方便手算）**：假设某线性层 W ∈ ℝ^{512×512}，用 LoRA 且秩 r=8。\n\n| 方案         | 参数量计算               | 数值                        |\n| ---------- | ------------------- | ------------------------- |\n| 全量微调       | 512 × 512           | 262,144                   |\n| LoRA (r=8) | A: 8×512 + B: 512×8 | 4,096 + 4,096 = **8,192** |\n\n- **节省倍数**：262,144 ÷ 8,192 = **32 倍**\n- **参数占比**：8,192 ÷ 262,144 ≈ **3.1%**（即只训原权重的 3%，剩 97% 冻结）\n- 真实大模型常用 d=k=4096, r=8：全量 16.78M，LoRA 仅 65,536，**省 ~256 倍**，训练参数占比 < 0.4%。\n\n### 3.3 计算例子：前向到底怎么算（2×2 玩具版）\n\n设原权重 W = [[1, 0], [0, 1]]（2×2 单位阵），秩 r=1。  \n随机初始化（训练前）A = [[0.3, 0.4]]（1×2），B = [[0.1], [0.2]]（2×1）。\n\n先算旁路矩阵 B·A：\n\n输入 x = [1, 1]，输出：\n\n```\nx·W      = [1, 1] · [[1,0],[0,1]]      = [1, 1]\nx·(B·A)  = [1, 1] · [[0.03,0.04],[0.06,0.08]] = [0.03+0.06, 0.04+0.08] = [0.09, 0.12]\nh        = x·W + x·(B·A)               = [1.09, 1.12]\n```\n\n> 训练时，**只调整 A 和 B 里的 4 个数**，让这个 [0.09, 0.12] 的\"偏移量\"朝着任务目标变好；W 里那 4 个数自始至终不动。\n\n### 3.4 为什么低秩假设管用（直觉）\n\n大模型的权重\"有效信息维度\"远低于表面维度——不同神经元之间高度相关。所以\"适配一个新任务所需的那点改动\"ΔW，天然可以用很少几个\"方向\"（低秩）表达。实验也证明：r=8 在多数任务上已接近全量微调效果，r 再大收益边际递减。\n\n### 3.5 推理时：合并 vs 不合并\n\n- **合并（merge）——零延迟**：把 B·A 直接加到 W 上，得到 W' = W + B·A，之后当普通模型跑，**零额外延迟**。部署常用。\n- **不合并（旁路）——可插拔**：保留 W 和 LoRA 两条路，运行时动态相加。好处是**一个底座可同时挂多个 LoRA 按需切换**（如一个模型挂\"法律 LoRA\"\"医疗 LoRA\"），切换不重加载底座。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "B·A = [[0.1],      · [[0.3, 0.4]] = [[0.1·0.3, 0.1·0.4],   = [[0.03, 0.04],\n       [0.2]]                          [0.2·0.3, 0.2·0.4]]     [0.06, 0.08]]"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-10-大模型微调"
+    ],
+    "tags": [
+      "大模型微调"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-10-大模型微调",
+      "file": "10-大模型微调.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-10-大模型微调-2-4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "QLoRA（Quantized LoRA，量化版 LoRA）",
+    "keywords": [
+      "做什么",
+      "为什么重要",
+      "计算例子",
+      "权重块",
+      "常数",
+      "FP32",
+      "8 字节",
+      "0.37 bit/参数"
+    ],
+    "answer": "### 4.1 它比 LoRA 多了什么\n\nLoRA 已经只训少量参数，但**底座模型 W 本身还是以 FP16 占着大块显存**（7B ≈ 14GB）。QLoRA 的核心一招：**把冻结的底座量化到 4-bit**，进一步压缩显存，让\"在单张消费级显卡上微调大模型\"成为可能。\n\n> 一句话：**LoRA 省的是\"训练参数量\"，QLoRA 在 LoRA 基础上再省\"底座显存\"**。两者不是替代关系，QLoRA = LoRA + 4-bit 量化底座。\n\n### 4.2 三个关键技术（小白版：做什么 / 为什么重要 / 计算例子）\n\nQLoRA 能在消费级显卡上微调大模型，靠的是把\"冻结的 FP16 底座\"压成 4-bit，而这背后有三个配套技术。逐个拆开讲。\n\n#### 4.2.1 NF4 量化（NormalFloat 4-bit）\n\n- **做什么**：把每个权重从 FP16（2 字节）缩成 4-bit（0.5 字节）的整数，用一张\"量化表\"记录映射关系。NF4 是**专门为正态分布权重设计**的 4-bit 数据类型，比普通 INT4 更贴合权重\"大多集中在 0 附近\"的分布，精度损失更小。\n- **为什么重要**：权重本身是最大的显存户（7B ≈ 14GB）。压到 4-bit 直接砍掉 75% 的底座显存，这是 QLoRA 能单卡跑大模型的根本。\n- **计算例子**：一个权重块 `[-0.9, 0.1, 0.05, 1.2]`。\n  - 普通 INT4 等分区间，小值（0.05）容易和 0 挤在一起被丢精度；\n  - NF4 按\"正态分布的分位数\"划分区间，0.05 这种靠近 0 的小权重也能分到独立档位，还原后更接近原值。\n\n> **名词补齐（来自答疑）：权重块 vs 权重矩阵**\n> - **权重块** = 把整张权重矩阵**展平后切成的小段连续元素**（QLoRA 里标准块大小是 **64 个数/块**），是量化的最小单元。例子 `[-0.9, 0.1, 0.05, 1.2]` 是为讲清原理而缩写的示意（只画了 4 个，真实块应是 64 个），代表\"从权重矩阵里抠出来的一小撮相邻权重值\"。\n> - **为什么按块量化、不整矩阵量化**：权重在整张矩阵里分布范围很宽（有的维度 -2、有的 0.001），用统一 scale 会把小数值全抹成 0。切成块后**每块只管自己那一小撮数的范围**，局部精度高很多。代价是每块都要额外存一份 scale（即上文的反量化常数），所以块也不能太小——64 是 QLoRA 在精度/开销间的折中。\n> - **关系一句话**：权重矩阵是整体，权重块是它被切成的最小量化单元。\n> \n\n#### 4.2.2 双重量化（Double Quantization）+ 反量化常数实例\n\n- **什么是\"反量化常数\"**：量化不是无损压缩——4-bit 整数本身没意义，必须记录\"怎么把整数还原回真实浮点数\"。这个映射用一个**常数**描述：\n  `真实值 ≈ 量化整数 × scale + zero_point`\n  其中 `scale`（缩放因子）和 `zero_point`（零点偏移）都是 **FP32**，每个被量化的小权重块要存一份，约 **8 字节**。它叫\"反量化常数\"，因为前向/反向时靠它把 4-bit 临时反算回 BF16（呼应 §4.4）。\n- **双重量化做什么**：模型有海量小权重块，每块都带一份 8 字节常数，累积起来很可观。双重量化 = **把这些\"反量化常数\"自己也再量化一次**（用更粗的精度），并引入极少量的\"二阶常数\"去描述它们，从而把常数占的显存再压一遍。\n- **为什么重要**：进一步抠显存，让 4-bit 底座更省；论文量化约 **0.37 bit/参数** 的额外节省。\n- **计算例子（双重量化）**：7B 模型约 7×10⁹ 参数，若每块 64 个参数 → 约 1.1×10⁸ 块。\n  - 不双重量化：常数 = 1.1×10⁸ × 8 B ≈ **0.88 GB**；\n  - 双重量化后：常数被压到约 **0.44 GB**（减半）。\n  这 0.44 GB 在 24GB 卡上很关键。\n\n#### 4.2.3 分页优化器（Paged Optimizers）\n\n- **做什么**：借用操作系统的\"虚拟内存/分页\"思想，把优化器的临时状态（动量 m、二阶动量 v）在 GPU 显存和 CPU 内存之间**按需换入换出**。\n- **为什么重要 → 防 OOM**：**OOM（Out Of Memory，显存溢出）** 就是显存不够、程序直接崩溃。长序列或大 batch 训练时，优化器状态会出现\"显存尖峰\"，一次性全留在 GPU 上就会撑爆。分页优化器允许把\"此刻用不到的那部分状态\"先挪到 CPU，需要时再换回，从而平滑掉尖峰、避免崩溃。\n- **计算例子**：一张 24GB 显卡，底座 + 激活常驻 21GB，剩下 3GB 给优化器状态——但某个长序列突然需要 3.5GB 状态，直接 OOM 崩。分页优化器把暂时不用的 1GB 状态换到 CPU，GPU 上只留 2.5GB，尖峰平稳过去。\n\n> **答疑：评估你对分页优化器的理解**\n> 你的说法\"把当前要算的页放在 GPU，其他暂时不算的页放在 CPU\"——**方向基本正确，但对象要精确**：\n> - 分页优化器换进换出的是**优化器的临时状态（动量 m / 二阶动量 v）和梯度缓冲**，不是\"模型的某一页权重\"。\n> - \"页（page）\"是显存管理单位，不是\"计算页\"。它的目的是在显存尖峰时把**暂时不活跃的优化器状态**挪到 CPU，避免一次性预留过多显存导致 OOM；等反向传播要用到那部分状态时再换回 GPU。\n> - 一句话修正：分页优化器 = 把\"暂时不活跃的**优化器状态**\"分页到 CPU，保证需要时能换回 GPU 继续算，而不是\"模型权重按页在 CPU/GPU 间调度\"。\n\n### 4.3 显存对比表（为何 QLoRA 能单卡跑）\n\n| 方案 | 底座精度 | 7B 模型大致显存 | 能否单卡消费级跑 |\n|---|---|---|---|\n| 全量微调 | FP16 + 梯度 + 优化器状态 | ~110 GB | 否（需多卡 A100） |\n| LoRA（FP16 底座） | FP16 | ~16–24 GB | 勉强（24GB 卡） |\n| **QLoRA（4-bit 底座）** | NF4 4-bit | **~6–8 GB** | **能（单张 24GB 甚至 12GB 卡）** |\n\n> 关键：LoRA 省的是\"训练参数\"，QLoRA 再省\"底座显存\"。65B 模型用 QLoRA 也能在单张 48–80GB 卡上微调。\n\n### 4.4 训练时的精度流（反量化）\n\n前向/反向时，4-bit 底座会被**临时反量化回 BF16** 参与计算（用分页显存缓冲），但**存盘和常驻显存仍是 4-bit**。梯度只流向 LoRA 的 A、B（BF16），底座权重因为被冻结、不要求梯度，所以一直压在 4-bit。\n\n- **反量化靠的就是 §4.2.2 的\"反量化常数\"（scale + zero_point）**：每次要算某一层，就用该层的常数把 4-bit 整数实时还原成 BF16 矩阵，算完即释放，不长期占显存。\n- **这会增加计算/时长吗？** 基本不。矩阵乘本就在 BF16 做（4-bit 不能直接乘），反量化只是 O(n) 的逐元素缩放，相比 O(n²) 的矩阵乘开销极小；QLoRA 单步仅慢个位数百分比，换来显存从 ~16GB 降到 ~6GB。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "> 权重矩阵 W (4096×4096)\n> ┌────────────────────────────┐\n> │ 0.3  0.1  -0.9  ...        │\n> │ 0.2  0.05  1.2  ...   ← 相邻数展平\n> │ ...                        │\n> └────────────────────────────┘\n>         │ 按行展平 + 每 64 个切一刀\n>         ▼\n> 块1: [0.3, 0.1, -0.9, 1.2, ...共64个] → scale1 + 量化为 64 个 4-bit\n> 块2: [0.05, -0.3, ...共64个]          → scale2 + 量化为 64 个 4-bit\n> 块3: ...\n> "
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-10-大模型微调"
+    ],
+    "tags": [
+      "大模型微调"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-10-大模型微调",
+      "file": "10-大模型微调.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-10-大模型微调-3-5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "DoRA（Weight-Decomposed LoRA，权重分解式 LoRA）",
+    "keywords": [
+      "幅度",
+      "方向",
+      "W = m · V",
+      "方向 V",
+      "幅度 m",
+      "LoRA 更新方向",
+      "合回 W' = m' · V",
+      "基本正确"
+    ],
+    "answer": "#### 5.1 核心思想：把权重拆成\"幅度 + 方向\"\n\nLoRA 只学一个整体偏移 ΔW = B·A。DoRA 认为：权重可以拆成**幅度（大小）**和**方向（朝向）**两部分分别微调，训练更稳更优。\n\n- 预训练权重 W 分解为：**W = m · V**，其中 `m` 是\"每输出列一个标量\"的幅度向量，`V` 是单位方向矩阵（每列是单位向量）。\n- 微调时：\n  - **方向 V** 用 LoRA 方式更新：`V ← V + B·A`（V 相当于纯 LoRA 里的 W）；\n  - **幅度 m** 用可学标量向量 `Δm` 更新：`m ← m + Δm`（每个输出列一个标量，不是全局单一数）。\n\n#### 5.2 计算例子：2×2 玩具版\n\n设预训练 W = [[0.6, 0.8], [-0.8, 0.6]]（注意两列已近似单位向量）。\n\n1. **分解幅度/方向**：\n   - 列1 范数 ‖[0.6,-0.8]‖ = 1.0 → m₁=1.0，V₁=[0.6,-0.8]\n   - 列2 范数 ‖[0.8,0.6]‖ = 1.0 → m₂=1.0，V₂=[0.8,0.6]\n   - 得 m=[1.0,1.0]，V=[[0.6,0.8],[-0.8,0.6]]，且 V 每列是单位向量 ✓\n2. **LoRA 更新方向**：设 r=1，A=[[0.1,0.2]]，B=[[0.05],[0.05]]，则 B·A=[[0.005,0.01],[0.005,0.01]]\n   - V' = V + B·A = [[0.605,0.81],[-0.795,0.61]]\n3. **关键一步：逐列重新归一化回单位向量**\n   - 列1 范数 = √(0.605²+0.795²)=√(0.366+0.632)=√0.998≈0.999 → 归一化后 V'₁≈[0.606,-0.796]，幅度差 Δm₁=0.999−1.0=−0.001\n   - 列2 范数 = √(0.81²+0.61²)=√(0.656+0.372)=√1.028≈1.014 → V'₂≈[0.799,0.602]，Δm₂=1.014−1.0=+0.014\n4. **合回 W' = m' · V'**（m'=m+Δm）：\n   - m'=[0.999,1.014]\n   - W' = [[0.999·0.606, 1.014·0.799], [0.999·(−0.796), 1.014·0.602]] = [[0.605,0.810],[−0.795,0.610]]\n\n> 对比纯 LoRA（W'=W+B·A=[[0.605,0.81],[−0.795,0.61]]）：DoRA 多做了\"幅度/方向解耦 + 重新归一化\"，让幅度 m 和 方向 V 各自独立学习，训练动态更合理。\n\n> **答疑：评估你对 DoRA 的理解**\n> 你的理解**基本正确**：W 分解为幅度 m 和方向 V，V 按 LoRA（训练 A、B）微调，m 用标量向量 Δm 微调。补两点让它更精确：\n> ① m 是\"**每输出列一个标量**\"的向量（不是全局单一标量），所以 Δm 也是同形状的向量；\n> ② **最关键的一步**：给 V 加 B·A 后必须**逐列重新归一化回单位向量**（见上方步骤 3），正是这一步把\"改多大（幅度）\"和\"改哪个方向\"解耦——这是 DoRA 区别于\"对 W 直接加低秩\"的核心。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-10-大模型微调"
+    ],
+    "tags": [
+      "大模型微调"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-10-大模型微调",
+      "file": "10-大模型微调.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-10-大模型微调-3-6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "三者关系图 + 对比表",
+    "keywords": [],
+    "answer": "| 方法 | 训练参数 | 底座精度 | 显存 | 效果 | 推理延迟 |\n|---|---|---|---|---|---|\n| 全量微调 | 100% | FP16 | 极大 | 上限 | 无额外 |\n| Adapter | ~6% | FP16 | 中 | 稳 | 有（串行） |\n| LoRA | 0.1%~1% | FP16 | 中 | 接近全量 | 可合并零延迟 |\n| QLoRA | 0.1%~1% | 4-bit | 小 | 接近全量 | 可合并零延迟 |\n| DoRA | 略 > LoRA | FP16/4-bit | 小~中 | 常略超 LoRA | 可合并零延迟 |",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "全量微调（贵，改全部）\n   └─ 冻结底座、只训少量参数 → PEFT 大类\n         ├─ Adapter / Prompt Tuning（插模块 / 加软提示）\n         └─ LoRA 类\n               ├─ LoRA        ：省\"训练参数\"（训 A、B）\n               ├─ QLoRA       ：LoRA + 4-bit 量化底座 → 再省\"底座显存\"\n               └─ DoRA        ：LoRA + 幅度/方向解耦 → 效果更好更稳"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-10-大模型微调"
+    ],
+    "tags": [
+      "大模型微调"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-10-大模型微调",
+      "file": "10-大模型微调.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-10-大模型微调-2-7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "其他 PEFT 方法与实践（补漏）",
+    "keywords": [
+      "这是什么",
+      "计算例子",
+      "适用",
+      "实现步骤",
+      "dropout 是什么",
+      "推理时关闭 dropout",
+      "具体怎么做",
+      "推理时"
+    ],
+    "answer": "### 7.1 IA³（Infused Adapter by Inhibiting and Amplifying Inner Activations）\n\n**这是什么**：2023 年提出的 PEFT，比 LoRA **参数更少、零推理延迟**。它不\"加\"一个低秩矩阵，而是学习**几个极小的\"缩放向量\"，在模型内部特定位置做\"逐元素乘法\"来放大/抑制激活**。\n\n**核心思想**：在 Transformer 的三个位置——注意力的值 V、注意力的输出、FFN 的输出——各乘一个可学习的向量（元素乘，即 `激活 ⊙ 向量`）。只训这几个向量，原模型冻结。\n\n**计算例子**：隐藏维度 h=4096，层数 L=32。\n\n- 可训参数 = 3（V / attn_out / ffn_out）× h × L = 3×4096×32 ≈ **393,216**（整个模型才这么点，占 7B 的 ~0.005%）。\n- 对比 LoRA（r=8, 全层）：约几十 M，IA³ 比它又小两个数量级。\n- 推理延迟：仅一次乘法，**可合并进原计算，零额外延迟**（比 Adapter 串行插入强）。\n\n**适用**：极致参数效率、想零延迟、多任务轻量适配。略逊于 LoRA/DoRA 的峰值效果，但参数量碾压。\n\n### 7.2 Prompt Tuning 具体实现（小白版，代码思路）\n\n**这是什么**：§2.2 讲过的\"软提示\"。具体落地就是：**在输入 embedding 前拼一段可训练的虚拟 token 向量，只训这段向量**。\n\n**实现步骤（伪代码）**：\n\n**关键点**：P 不是真实文字，是模型自己学出来的连续向量；HuggingFace 里 `PromptTuningConfig` + `PromptTuningModel` 几行即可用，无需准备\"提示词文本\"。\n\n### 7.3 LoRA 超参：alpha 与 dropout（小白版）\n\n**dropout 是什么**：深度学习通用正则化手段——**训练时随机把一部分激活\"置零\"（丢弃），比例由 p 控制（如 0.1 = 随机丢弃 10%）**，强迫模型不依赖特定神经元、防过拟合；**推理时关闭 dropout**（全用，不做丢弃）。在 LoRA 里，`lora_dropout` 作用在 LoRA 旁路的输入上（丢弃 A 的输入），p 取 0.05~0.1，小数据集防过拟合有用。\n\n**具体怎么做（计算例子）**：设 LoRA 旁路输入（即 A 的输入）是一个 5 维向量 `a = [0.5, -0.3, 0.8, 0.1, -0.6]`，`lora_dropout = 0.4`（训练时随机丢弃 40%）。\n- 第 1 步：生成一个和 a 同形状的随机掩码，对每维以 40% 概率置 0、60% 概率置 1，例如本次抽到 `mask = [1, 0, 1, 0, 1]`；\n- 第 2 步：逐元素相乘 `a_masked = a ⊙ mask = [0.5, 0, 0.8, 0, -0.6]`（被抽中的位置归零）；\n- 第 3 步（保持期望不变）：再除以\"保留比例\" `(1−p)=0.6`，得 `a_drop = [0.833, 0, 1.333, 0, -1.0]`；\n- 然后这个 `a_drop` 才送进 A 矩阵。每次前向都重新随机抽 mask，于是网络不能死记\"某几个神经元\"，泛化更好。\n- **推理时**：dropout 关闭，不抽掩码、不缩放，直接用原始 `a = [0.5, -0.3, 0.8, 0.1, -0.6]`（用全部神经元做确定性的最终预测）。\n\n**alpha（α）是什么**：LoRA 更新的**缩放系数**。实际更新是 `h = x·(W + (α/r)·B·A)`——注意多了 `α/r` 这一项。**α 控制 LoRA 旁路\"话语权\"多大**，与秩 r 解耦。\n\n- **计算例子**：r=8，α=16 → 缩放 = α/r = 2，BA 的贡献被放大 2 倍；r=8，α=8 → 缩放=1（标准）。\n- 经验：常设 α = 2×r（如 r=8 配 α=16），或 α=r；调大 α = LoRA 影响更强。\n\n### 7.4 多 LoRA 服务化（Multi-LoRA Serving）\n\n**这是什么**：**一个底座模型同时挂多个 LoRA 适配器，按请求动态切换/组合**，不用为每个任务存一份完整模型。核心价值：100 个任务 = 1 个底座(~14GB) + 100 个 LoRA(各几 MB)，而非 100×14GB。\n\n**怎么落地**：\n\n- 底座加载一次常驻显存；各 LoRA 的 A、B 矩阵也载入显存（每个仅 MB 级）。\n- 每个请求带上\"用哪个 LoRA\"的路由，推理时把对应 A、B 旁路实时加到底座上（或预合并）。\n- 框架：**[vLLM](https://github.com/vllm-project/vllm)**（原生支持 LoRA，多 adapter 批处理）、**S-LoRA / Punica**（单卡服务上千 LoRA，统一批处理内核）、**HuggingFace TGI**、**PEft 库**（轻量）。\n\n**计算例子**：底座 7B = 14GB；100 个 LoRA × 50MB = 5GB。合计 ~19GB，**单张 24GB 卡服务 100 个任务**。若不用 LoRA，需 100×14GB = 1.4TB，天壤之别。\n\n**按请求切换的例子 + 流程图**：\n- 服务启动时：底座加载一次常驻显存；所有 LoRA 的 A、B 矩阵也预载入（各 MB 级）。\n- 请求带路由：客户端在每个请求头里声明要用哪个 LoRA，例如 `X-LoRA: legal`（法律）或 `X-LoRA: medical`（医疗）。\n- 调度：网关按请求头把对应 A、B 旁路\"挂\"到底座上做本次推理；不同请求并发时，框架用统一批处理内核把多个 LoRA 的旁路一次性算完。\n- 例：同一秒进来 3 个请求 → `[legal, medical, legal]`，底座只算一份共享的前半段，三个 LoRA 旁路分别叠加，互不影响。\n\n```mermaid\nflowchart LR\n    R1[请求1: X-LoRA=legal] --> G{路由网关}\n    R2[请求2: X-LoRA=medical] --> G\n    R3[请求3: X-LoRA=legal] --> G\n    G --> B[底座常驻·共享前半段]\n    B --> L1[叠加 legal LoRA A/B]\n    B --> L2[叠加 medical LoRA A/B]\n    B --> L3[叠加 legal LoRA A/B]\n    L1 --> O1[返回 法律答复]\n    L2 --> O2[返回 医疗答复]\n    L3 --> O3[返回 法律答复]\n```\n\n> 待补充：微调数据构建与质量评估；全量微调 vs PEFT 的效果基准对比实验；QLoRA 训练脚本实战（bitsandbytes + peft）。\n\n# Part 2 · 常见问题清单（面试速记）\n\n**Q1：什么是微调？为什么不全量微调、要用 PEFT？**  \nA：微调=在预训练底座上用任务数据继续训练做专才。全量微调显存爆炸（优化器状态占 12 字节/参数）、灾难性遗忘、易过拟合、成本高。PEFT 冻结底座只训少量参数，省显存抗遗忘可插拔。\n\n**Q2：PEFT 有哪几类？**  \nA：Adapter（插瓶颈模块）、Prefix/Prompt Tuning（加可学软提示）、LoRA 类（低秩分解权重更新）。当前最主流是 LoRA 类。\n\n**Q3：LoRA 的核心思想与公式？**  \nA：假设权重更新量 ΔW 低秩，用 ΔW=B·A 近似（A∈ℝ^{r×k}, B∈ℝ^{d×r}, r≪d,k）。前向 h = x·(W+BA)，训练只更新 A、B，W 冻结。参数量从 d×k 降到 d·r+r·k。\n\n**Q4：LoRA 省显存的根本原因？**  \nA：① 只训 A、B 少量参数→优化器状态/梯度只占这些；② 底座 W 冻结，不需存其梯度与 Adam 动量；③ 基座甚至可 4-bit（QLoRA）。\n\n**Q5：LoRA 秩 r 怎么选？越大越好吗？**  \nA：r 控制可学\"方向\"数。多数任务 r=8 已接近全量效果；r 越大越接近全量但收益边际递减、参数变多。先小后调，看验证集。\n\n**Q6：LoRA 和 QLoRA 什么关系？**  \nA：QLoRA = LoRA + 4-bit 量化底座（NF4 + 双重量化 + 分页优化器）。LoRA 省\"训练参数\"，QLoRA 再省\"底座显存\"。7B 全量微调需 ~110GB，QLoRA 仅需 ~~6~~8GB 单卡可跑。\n\n**Q7：什么是 NF4？双重量化是什么？**  \nA：NF4=专为正态分布权重设计的 4-bit 数据类型，比 INT4 更贴合、损失更小。双重量化=把量化产生的常数也再量化一次，进一步省显存（约 0.37 bit/参数）。\n\n**Q8：DoRA 和 LoRA 的区别？为什么更好？**  \nA：DoRA 把权重拆成 幅度向量 m + 单位方向矩阵 V，对方向用 LoRA 更新、对幅度用可学标量更新，二者解耦。训练动态更合理，常略超 LoRA、更接近全量微调，参数只多一点点（幅度向量）。\n\n**Q9：LoRA 推理时要合并吗？**  \nA：可合并（W'=W+BA，零额外延迟，部署常用）也可不合并（保留旁路，一个底座挂多个 LoRA 按需切换）。按需切换场景用旁路。\n\n**Q10：PEFT 方法怎么选？**  \nA：显存够、追效果→LoRA；显卡小/要微调大模型→QLoRA；同任务要更优更稳→DoRA。三者都只训少量参数，底座共享、可插拔，是多任务部署首选。\n\n**Q11：优化器状态 12 字节/参数怎么来的？Adam 主流吗？**  \nA：Adam 为每个参数在 FP32 维护 3 个缓冲（参数主副本 4B + 一阶动量 m 4B + 二阶动量 v 4B）= 12B/参数。7B→84GB。Adam/AdamW 是 transformer/大模型训练绝对主流（收敛快、鲁棒）；SGD/RMSprop 几乎不用于大模型主优化器。PEFT 只训少量参数，使 Adam 状态从 84GB 降到 MB 级——这正是 PEFT 省显存的核心之一。\n\n**Q12：Adapter 类是什么？优缺点？**  \nA：在 Transformer 每层插入\"降维-激活-升维\"瓶颈小模块，只训这些模块。优点：实现简单、插拔方便；缺点：串行插入带来推理延迟（不能像 LoRA 合并零延迟）；适用显存敏感、能接受少量延迟的多任务试验。\n\n**Q13：Prefix Tuning 与 Prompt Tuning 区别？**  \nA：都在输入前加可学软提示。Prefix Tuning 在每层 K/V 前都拼前缀（参数较多）；Prompt Tuning 只在输入 embedding 前拼一段（参数极少，如 20×4096≈8 万）。后者更简单更省，是大模型软提示主流。\n\n**Q14：NF4 / 双重量化 / 分页优化器 各自解决什么？**  \nA：NF4 = 为正态分布权重设计的 4-bit 类型，保住小权重精度；双重量化 = 把量化常数再量化一遍省 ~0.37bit/参数；分页优化器 = 把优化器临时缓冲分页到 CPU，防长序列 OOM。三者共同让 QLoRA 在消费级显卡跑大模型。\n\n**Q15：4-bit 底座每次前向都反量化，会增加计算/时长吗？**  \nA：基本不增加。矩阵乘本就在 BF16 做（4-bit 不能直接乘），反量化只是 O(n) 逐元素缩放，相比 O(n²) 矩阵乘开销极小；反量化即用即弃、不长期占显存。QLoRA 单步仅慢个位数百分比，换来显存从 ~16GB 降 ~6GB。\n\n**Q16：DoRA 的 m 是标量还是向量？关键一步是什么？**  \nA：m 是\"每输出列一个标量\"的向量（非全局单一标量）。关键：给方向 V 加 BA 后必须**逐列重新归一化回单位向量**，保持幅度/方向解耦——这正是 DoRA 区别于\"对 W 直接加低秩\"的核心。\n\n**Q17：IA³ 是什么？为什么参数极少还零延迟？**  \nA：学几个缩放向量在 V/attn_out/ffn_out 处做元素乘来调模型。参数量级仅几十万（7B 的 ~0.005%）；推理仅是一次乘法且可合并进原计算，零额外延迟。峰值效果略逊 LoRA/DoRA，但参数效率碾压。\n\n**Q18：多 LoRA 服务化是什么？**  \nA：一个底座挂多个 LoRA 按请求动态切换，避免每任务一份完整模型。如 7B 底座 14GB + 100 个 LoRA×50MB ≈ 19GB 单卡服务 100 任务，而非 1.4TB。工具：vLLM、S-LoRA/Punica、TGI。\n\n**Q19：LoRA 的 alpha 和 dropout 是什么？**  \nA：dropout = 训练时随机丢弃部分激活防过拟合（推理关闭），lora_dropout 作用在旁路输入（0.05~0.1）。alpha = LoRA 更新缩放系数，实际更新含 (α/r)·BA；α 调大 = LoRA 话语权更强，常设 α=2r 或 α=r。\n\n**Q20：什么是双重量化？\"反量化常数\"是什么？**\nA：量化不是无损，必须把 4-bit 整数还原回浮点，靠一份 FP32 常数（scale+zero_point，每块约 8 字节）。双重量化=把这些常数自己也再量化一遍（加极少量二阶常数），把常数显存再砍半（7B 约 0.88GB→0.44GB，省 ~0.37 bit/参数）。\n\n**Q21：OOM 是什么？**\nA：Out Of Memory，显存不够、程序直接崩溃。长序列/大 batch 训练时优化器状态出现显存尖峰，超出显卡容量就 OOM。QLoRA 用分页优化器把暂时不用的优化器状态换到 CPU 来防它。\n\n**Q22：分页优化器就是把\"页\"在 GPU/CPU 间调度吗？**\nA：方向对但对象要精确——它换进换出的是**优化器的临时状态（动量 m/二阶动量 v）和梯度缓冲**，不是模型权重页；目的是在显存尖峰时把不活跃状态挪到 CPU、需要时换回，避免一次性预留过多显存导致 OOM。\n\n**Q23：lora_dropout 具体怎么丢？给个例子。**\nA：作用在 LoRA 旁路输入（A 的输入）。如 5 维输入 [0.5,-0.3,0.8,0.1,-0.6]、p=0.4，随机抽 mask=[1,0,1,0,1]→置零得 [0.5,0,0.8,0,-0.6]→除以(1−p)=0.6 得 [0.833,0,1.333,0,-1.0] 再送 A；每次随机重抽，防过拟合。推理时关闭、用全量。\n\n**Q24：多 LoRA 怎么按请求切换？**\nA：底座常驻、各 LoRA 的 A/B 预载入；请求头带路由（如 X-LoRA=legal/medical），网关把对应 A/B 旁路实时挂到底座做本次推理，不同请求并发由统一内核批量叠加。同底座可同时服务上百任务，单卡 24GB 跑 100 任务而非 1.4TB。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "1. 取输入文本 → tokenizer → input_ids，embedding 层得到 E (batch, seq_len, h)\n2. 初始化软提示矩阵 P (p, h)，作为模型参数（随机初始化，与词表无关）\n3. 拼接：X = concat(P, E)  → (batch, p+seq_len, h)   # P 在序列最前面\n4. 冻结 Transformer 全部权重，只把 P 标为 requires_grad=True\n5. 前向照常过 Transformer；Loss 反向时梯度只更新 P\n6. 推理：固定 P 拼在前面即可，模型\"读\"这段软提示来切换行为"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-10-大模型微调"
+    ],
+    "tags": [
+      "大模型微调"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-10-大模型微调",
+      "file": "10-大模型微调.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "强化学习到底是什么？",
+    "keywords": [
+      "不断试错",
+      "奖励",
+      "MDP",
+      "轨迹",
+      "折扣回报",
+      "优势",
+      "整条轨迹拿了多少总回报 R"
+    ],
+    "answer": "**一句话**：智能体（Agent）在一个环境里**不断试错**，每做一个动作环境给一点**奖励（reward）**，目标是让\"长期累计奖励\"最大。\n\n和\"监督学习\"的本质区别：监督学习是\"给标准答案让你抄\"（x→y 一一对应）；强化学习是\"只有对错的反馈、没有标准答案\"，要自己摸索出最好的策略。\n\n### 1.1 五个核心名词（先背下来）\n\n| 名词   | 符号     | 含义（小白版）             |                                 |\n| ---- | ------ | ------------------- | ------------------------------- |\n| 状态   | `s`    | 当前局面（如对话到目前的上下文）    |                                 |\n| 动作   | `a`    | 智能体做的事（如生成一个 token） |                                 |\n| 策略   | \\`π(a  | s)\\`                | \"看到局面 s 时，选动作 a 的概率\"——这是我们要学的东西 |\n| 奖励   | `r`    | 做完动作环境给的分（好+分，坏-分）  |                                 |\n| 状态转移 | \\`P(s' | s,a)\\`              | 做了 a 之后，局面变成 s' 的概率规律           |\n\n> 数学上这套叫 **MDP（马尔可夫决策过程）**：下一步只取决于\"当前状态+当前动作\"，和更早的历史无关（\"无记忆\"假设，简化问题）。\n\n### 1.2 两个必须懂的衍生概念\n\n- **轨迹（trajectory）**：一条完整的\"状态-动作-奖励\"序列 `τ = (s₁,a₁,r₁, s₂,a₂,r₂, …)`。大模型生成一句话，就是一条轨迹。\n- **折扣回报（return）**：`G = r₁ + γ·r₂ + γ²·r₃ + …`，其中 `γ∈(0,1]` 是折扣因子——越靠后的奖励权重越低（\"朝三暮四\"）。`γ=1` 表示不打折。\n- **优势（advantage）`A(s,a)`**：\"在局面 s 下做动作 a，比'平均水准'好多少\"。这是后面 PPO/GRPO 更新的关键信号——**只有\"比平均好\"的动作才被鼓励**。\n\n### 1.3 前置：策略梯度（REINFORCE）—— PPO 的数学根源\n\n> 想真懂 PPO，得先懂\"策略梯度\"。这是 §4 PPO 的地基，单独放这里讲。\n\n**目标**：最大化期望回报 `J(θ) = E_{τ~π_θ}[ R(τ) ]`，其中 `R(τ)` 是整条轨迹的总回报。\n\n**关键技巧（似然比 / REINFORCE 技巧）**：对期望求梯度时，利用恒等式 `∇_θ π_θ(τ) = π_θ(τ) · ∇_θ log π_θ(τ)`，可以把梯度写成：\n\n直觉：**整条轨迹拿了多少总回报 R(τ)，就把这条轨迹上所有动作的对数概率一起往\"增大\"方向推**。R 大→多推，R 小→少推（甚至负推）。\n\n**致命缺陷——方差爆炸**：R(τ) 是整条轨迹的随机总回报，噪声极大，梯度抖得训不动。  \n**补救——减基线（baseline）**：把 `R(τ)` 换成 `A = R(τ) − b`（b 是常数基线，如所有轨迹平均回报）。**减常数不改变期望梯度，但能大幅降方差。**`A>0` 鼓励、`<0` 抑制——这正是\"优势\"概念的由来。\n\n```\n# REINFORCE 伪代码（最简版）\nfor each episode τ = (s₁,a₁,r₁,...):\n    G = 计算折扣总回报\n    for t in 1..T:\n        A_t = G_t - baseline          # 优势（用基线降方差）\n        θ -= lr · A_t · ∇_θ log π_θ(a_t | s_t)   # 沿梯度更新\n```\n\n> 记住一句：**PPO = REINFORCE（策略梯度） + 重要性采样复用数据 + Clip 限制步长 + 用优势替代总回报**。§4 会层层揭开。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "∇_θ J(θ) = E_{τ~π_θ}[  R(τ) · ∇_θ log π_θ(τ)  ]"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "为什么大模型需要\"对齐\"？又为什么用强化学习？",
+    "keywords": [
+      "对齐"
+    ],
+    "answer": "预训练（第 7 章）只是让模型学会\"预测下一个词\"，目标是**语料续写概率最大**，不等于\"符合人类偏好/指令\"。例子：\n\n- 你问\"怎么偷东西\"，它可能因为语料里这类内容多，就真给你写一本指南——这不是我们想要的。\n- 我们要的是\"有用、诚实、无害（HHH）\"。\n\n**对齐（Alignment）** = 把模型的行为往人类价值观/指令上掰。\n\n**为什么用强化学习，而不是再跑一次监督微调？**  \n因为\"好回答\"很难用一条标准答案定义——同一问题有无数好答法。但人类很容易**比较两个回答哪个更好**（偏好数据）。**强化学习恰好擅长\"只有相对比较、没有绝对标准答案\"**&#x7684;优化——这正是 RLHF 的出发点。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "RLHF：从人类反馈做强化学习（整体流程）",
+    "keywords": [
+      "三阶段",
+      "整体思路",
+      "实现流程",
+      "产出",
+      "排序",
+      "数据形式",
+      "RM 的训练损失",
+      "PPO 算法"
+    ],
+    "answer": "RLHF = **Reinforcement Learning from Human Feedback**。经典做法是**三阶段**：\n\n### 3.1 阶段 1：SFT（监督微调）——教\"样子\"\n\n**整体思路**：**先用人工写的\"高质量问答对\"微调模型，让它先学会\"按指令回答的基本样子\"。**&#x8FD9;给后续 RL 一个不跑偏的起点。\n\n**实现流程**：和普通监督训练一样，对示范数据 `(x, y)` 最小化**下一个词的交叉熵损失**：\n\n```\nL_SFT = - Σ_t log π_θ(y_t | x, y_{<t})\n```\n\n**产出**：初始策略模型 `π_SFT`（同时它也是后面 RL 的\"参考模型 π_ref\"）。\n\n```mermaid\nflowchart LR\n    A[人工示范问答对 x,y] --> B[冻结/加载底座]\n    B --> C[最小化下一词交叉熵]\n    C --> D[得到 π_SFT / π_ref]\n```\n\n### 3.2 阶段 2：训练奖励模型 RM ——教\"打分\"\n\n**整体思路**：人类很难给\"绝对分数\"，但很容易给\"排序\"。收集同一问题下的多个回答让人**排序**（哪个好），训练一个 RM 把\"模糊的偏好\"量化成数值分数。\n\n**数据形式**：成对偏好 `(x, y_w, y_l)`——问题 x 下，人类认为 `y_w`（win）优于 `y_l`（lose）。\n\n**数学公式：Bradley-Terry 模型**  \nBradley-Terry 是\"用分数差表达胜率\"的经典模型：人类偏好 `y_w ≻ y_l` 的概率，正比于两者分数差经过 sigmoid：\n\n```\nP(y_w ≻ y_l | x) = σ( r_φ(x, y_w) − r_φ(x, y_l) )\n```\n\n其中 `r_φ` 是 RM 输出的标量分数，`σ` 是 sigmoid。分数差越大，越确信 y_w 更好。\n\n**RM 的训练损失（成对 logistic 损失）**：让\"真实偏好\"的概率最大，即最小化负对数似然：\n\n```\nL_RM = - E_{(x,y_w,y_l)}[ log σ( r_φ(x, y_w) − r_φ(x, y_l) ) ]\n```\n\n- 若 RM 给 y_w 的分数高于 y_l，括号里为正 → σ>0.5 → 损失小；\n- 反之惩罚。**注意 RM 只在\"同一问题内的相对分\"上训练，绝对分值没意义**，所以训练时常把 RM 最后一层的偏置去掉、或做标准化。\n\n```mermaid\nflowchart LR\n    A[同一问题 x 生成多回答] --> B[人类排序得 y_w, y_l]\n    B --> C[RM 给 r(x,y_w), r(x,y_l)]\n    C --> D[算 log σ(r_w - r_l)]\n    D --> E[梯度下降最小化 L_RM]\n    E --> F[得到奖励模型 r_φ]\n```\n\n### 3.3 阶段 3：用 PPO 做强化学习 ——用打分推\"好样子\"\n\n**整体思路**：拿一批问题 `x`，让当前策略 `π_θ` 生成回答 `y`；用 RM 给 `y` 打分当奖励；用 **PPO 算法**更新 `π_θ`，让\"拿高分的回答\"概率变大；同时加 **KL 惩罚**防止策略为了刷分而胡说（奖励黑客）。\n\n**奖励怎么算（含 KL 惩罚——这是你之前问的\"KL 在哪\"）**：  \nRLHF 里 KL 惩罚**不是单独一项挂目标上，而是直接折进每一步的奖励里**（token 级）：\n\n```\nr_total(x, y) = r_φ(x, y)  −  β · KL( π_θ(y_t|x,y_{<t}) ‖ π_ref(y_t|x,y_{<t}) )\n```\n\n- `r_φ(x, y)`：RM 给的整体好评（常对整条 y 打分，再分配或只用终分）；\n- `β·KL`：每一步生成 token 时，若 `π_θ` 偏离参考模型 `π_ref` 太远，就扣分。**β 越大越保守**（越不敢偏离 SFT 起点）。\n\n**PPO 的完整训练目标**（§4 会逐块拆）：\n\n```\nL_PPO = E[ L^CLIP(θ)  −  c1·L^VF(V_ψ)  +  c2·H(π_θ) ]\n```\n\n- `L^CLIP`：策略的裁剪代理损失（核心，§4.3）；\n- `L^VF`：价值网络 `V_ψ` 的 MSE 损失（让 critic 估的回报接近真实回报）；\n- `H`：熵奖励（鼓励探索，防止过早僵化）；\n- 外加上面的 KL 进奖励。\n\n```mermaid\nflowchart TD\n    X[问题 x] --> P[π_θ 生成回答 y]\n    P --> R[奖励 r_φ(x,y)]\n    P --> K[每步 KL 惩罚 vs π_ref]\n    R --> T[r_total = r_φ - β·KL]\n    T --> O[PPO 更新 π_θ]\n    K --> T\n    O --> P2[π_ref 固定不动]\n    O --> V[更新 V_ψ 估回报]\n```",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "阶段1 SFT ──→ 阶段2 训练奖励模型 RM ──→ 阶段3 用 PPO 强化学习优化策略\n(监督微调)        (学\"人类偏好\"的打分器)        (用 RM 当奖励信号调策略)"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "PPO：在线强化学习的核心算法",
+    "keywords": [
+      "KL 散度",
+      "TRPO",
+      "PPO",
+      "问题",
+      "做法",
+      "旧策略 π_old 采样",
+      "算例",
+      "② Clip"
+    ],
+    "answer": "PPO = **Proximal Policy Optimization（近端策略优化）**。它是 RLHF 第三阶段最常用的算法，也是 ChatGPT 初代对齐用的算法。\n\n### 4.1 它要解决什么痛点？——\"跑飞\"与\"小步改\"\n\n**为什么\"步子一大，策略瞬间崩掉、再也救不回来\"？**  \n策略 `π_θ` 是由海量参数决定的概率分布。如果某次梯度更新把参数大幅改动，会让\"生成概率\"在成千上万个词上**同时剧烈变化**——原本正常的回答可能瞬间变成乱码或死循环。更糟的是：RL 里策略自己生成的数据就是训练环境，**一旦策略变烂，它后续采样出的数据也全是烂的**，形成\"越训越废\"的死亡螺旋，且很难靠小学习率挽回。\n\n**怎么实现\"每次只让策略小步改\"？——信赖域思想**  \n核心约束：**更新后的策略 `π_θ` 和旧策略 `π_old` 不能差太远**。用数学度量\"差多远\"就是 **KL 散度** `KL(π_θ ‖ π_old)`。只要强制这个 KL 小于一个小阈值 δ，就保证\"每步只挪一小块\"，不会跑飞。\n\n- **TRPO**（§7）用的是\"硬约束\"：`KL ≤ δ`，要用共轭梯度解带约束优化，复杂；\n- **PPO** 用更巧的近似——**不直接算 KL 约束，而是用 Clip 把概率比限制住**（见 §4.2），效果接近但实现简单 100 倍。这就是\"近端（Proximal）\"的含义。\n\n### 4.2 两个关键技术（为什么重要 + 算例）\n\n**① 重要性采样（Importance Sampling）——解决\"数据复用\"**\n\n- **问题**：纯在线 RL 每更新一步就要重新采样新数据，极贵。\n- **做法**：用**旧策略 π_old 采样**一批数据存起来，再用这批**旧数据多次更新新策略 π_θ**（离线复用）。两者概率之比叫重要性比率：\n  \n  `ρ>1`：新策略比旧策略更倾向这个动作；`ρ<1`：反之。\n- **算例**：某动作 `π_old=0.2`，更新后 `π_θ=0.3` → `ρ=1.5`，说明新策略更爱这动作，该动作的优势会被放大 1.5 倍计入梯度。\n\n**② Clip（裁剪）——解决\"步子太大\"**\n\n- **问题**：光有 ρ 还不够——如果 ρ 被推到 10（新策略疯狂偏爱上这动作），一步就跑飞了。\n- **做法**：把 ρ **裁剪**到 `[1-ε, 1+ε]`（ε 通常 0.2，即允许 ±20% 波动）。超出部分直接\"削平\"，不让它继续推。\n- **算例**：ε=0.2。`ρ=1.5` → `clip(1.5, 0.8, 1.2)=1.2`（削掉超出的 0.3）；`ρ=0.5` → `clip=0.8`（兜底到 0.8，不让你过度抛弃这个动作）。\n### 4.3 目标函数（完整版，含 KL）\n\n**策略的裁剪代理损失**（你之前看到的 `L^CLIP`）：\n\n```\nL^CLIP = - E[ min( ρ·A ,  clip(ρ, 1-ε, 1+ε)·A ) ]\n```\n\n- `A` 是优势（动作比平均好多少）；\n- `min(ρ·A, clip·A)`：**取\"不冒进\"的那个**，防止更新过猛；\n- 整体取负号+期望，因我们要**最大化**该目标。\n\n**完整 PPO 目标**（加上价值损失与熵，并把 KL 折进奖励，前面 §3.3 已给）：\n\n```\nL = E[ L^CLIP(θ)  −  c1·L^VF(V_ψ)  +  c2·H(π_θ) ]\n```\n\n**你之前问\"KL 惩罚去哪了\"——答**：RLHF 实操中 KL 是以 **token 级惩罚折进奖励 `r_total = r_φ − β·KL`**（§3.3）；也有版本把它作为显式项 `β·KL(π_θ‖π_ref)` 加到目标里。两种等价思路，都起\"别跑太远\"的作用。\n\n**`L^CLIP` 算例**：设 ε=0.2。\n\n- 情形 a：`A=+1.0`（这动作比平均好），`ρ=1.5` → `ρ·A=1.5`，`clip·A=1.2` → `min=1.2` → 损失 `-1.2`（被裁剪，没冲太狠）。\n- 情形 b：`A=+1.0`，`ρ=0.9` → `0.9` → 损失 `-0.9`（没越界，正常用）。\n- 情形 c：`A=-1.0`（这动作比平均差），`ρ=1.5` → `ρ·A=-1.5`，`clip·A=-1.2` → `min=-1.5`（取更小，即惩罚不被 clip 保护，照罚）。\n\n### 4.4 为什么同时养 4 个模型？怎么协作？\n\n在线 RLHF 同一时刻需 4 个网络，各司其职：\n\n| 模型                     | 角色                              | 是否更新    |\n| ---------------------- | ------------------------------- | ------- |\n| **Policy（actor）`π_θ`** | 正在被训练、负责生成的模型                   | ✅ 主训练对象 |\n| **Value（critic）`V_ψ`** | 估算状态未来总回报，用来算优势 `A = 回报 − V(s)` | ✅ 同步训练  |\n| **Reward Model `r_φ`** | 对生成内容打奖励分                       | ❌ 冻结    |\n| **Reference `π_ref`**  | 初始 SFT 模型，提供 KL 锚点防跑偏           | ❌ 冻结    |\n\n**协作流程图**：\n\n```mermaid\nflowchart TD\n    X[问题 x] --> POL[π_θ 生成 y]\n    POL --> RM[r_φ 打分 → 奖励]\n    POL --> REF[π_ref 算 KL]\n    RM --> RT[r_total = r - β·KL]\n    POL --> CRIT[V_ψ 估 V s]\n    RT --> ADV[A = 回报 - V]\n    CRIT --> ADV\n    ADV --> UPD[PPO 更新 π_θ 和 V_ψ]\n    REF --> RT\n    UPD --> POL\n```\n\n> PPO 强大但**贵且复杂**——4 个模型同时占显存（尤其 critic），value 网络还引入额外方差。这正是 DPO（§5）、GRPO（§6）想简化的地方。",
+    "explanation": "只允许温和改动。",
+    "code": {
+      "language": "python",
+      "content": "  ρ = π_θ(a|s) / π_old(a|s)\n  "
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "DPO：把\"强化学习\"悄悄变成\"监督学习\"",
+    "keywords": [
+      "第 1 步",
+      "闭式解",
+      "第 2 步",
+      "反解出奖励",
+      "第 3 步",
+      "直觉",
+      "算例",
+      "优点"
+    ],
+    "answer": "DPO = **Direct Preference Optimization（直接偏好优化）**。2023 年提出，核心洞察非常漂亮：**既然 RLHF 最终收敛到的策略有固定数学形式，那我直接拿偏好数据当损失训，不就行了？何必训练 RM、还跑 PPO？**\n\n### 5.1 核心推导（为什么能跳过 RM 和 PPO）\n\n**第 1 步**：在\"KL 约束下最大化奖励\"的最优策略有**闭式解**（来自凸优化）：\n\n即\"奖励越高，最优策略给它概率越大\"，且被 π_ref 拉住别跑太远（β 控强度）。\n\n**第 2 步**：把上式**反解出奖励**：\n\n```\nr(x,y) = β · log( π_θ(y|x) / π_ref(y|x) ) + β·log Z(x)\n```\n\n奖励竟能用\"策略相对参考模型的概率比\"表示！\n\n**第 3 步**：代入人类偏好\"y_w 应比 y_l 得分高\"的 Bradley-Terry 约束 `P(y_w≻y_l)=σ(r_w−r_l)`，把 r 用上式替换、并消去与 y 无关的配分函数 `Z(x)`，整个 RL 问题就**坍塌成一个二分类式的监督损失**——无需 RM、无需 PPO 在线采样。\n\n### 5.2 损失函数（背这个）\n\n```\nL_DPO = - log σ( β · [ log(π_θ(y_w|x)/π_ref(y_w|x)) − log(π_θ(y_l|x)/π_ref(y_l|x)) ] )\n```\n\n- `σ` 是 sigmoid；中括号 = \"胜出回答相对概率\" − \"输掉回答相对概率\"；\n- **直觉**：只要 y_w 比 y_l 相对更可能被生成，损失小；否则暴涨、强梯度把它们拉开。\n\n**算例**：β=1。某样本：`log π_θ(y_w)/π_ref(y_w)=0.3`，`log π_θ(y_l)/π_ref(y_l)=−0.2`。\n\n- 中括号 = 0.3−(−0.2)=0.5；`σ(0.5)≈0.62`；损失 `−log(0.62)≈0.48`。\n- 若模型反过来把 y_l 提得比 y_w 高 → 中括号为负 → σ 趋 0 → 损失暴涨 → 拉开。\n\n### 5.3 优缺点（面试常考）\n\n- **优点**：**离线**（只用现成偏好对，不用在线采样、不用 RM、不用价值网络），稳定、省显存、好复现，是目前最流行的对齐方法之一。\n- **缺点**：**离线**导致优化分布和真实生成分布有偏差；高度依赖偏好数据质量；对\"可验证正确答案\"（如数学题）不如 GRPO 直接。\n\n```mermaid\nflowchart LR\n    D[偏好对 x,y_w,y_l] --> L[算相对概率比差值]\n    L --> S[σ(β·差值)]\n    S --> U[梯度拉大 y_w / 压低 y_l]\n    U --> M[更新 π_θ，π_ref 冻结]\n```",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "π*(y|x) ∝ π_ref(y|x) · exp( r(x,y) / β )"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "GRPO：省掉价值网络的\"组内相对\"法",
+    "keywords": [
+      "value",
+      "完全不需要 value 网络",
+      "算例",
+      "0.625",
+      "0.275",
+      "可验证奖励"
+    ],
+    "answer": "GRPO = **Group Relative Policy Optimization（群体相对策略优化）**，DeepSeek 在 DeepSeekMath（2024）提出，并在 DeepSeek-R1 里大规模用于**数学/推理对齐**。\n\n### 6.1 它要解决什么？\n\nPPO 必须养一个 **value（critic）网络**算优势，这额外占显存、还引入方差。GRPO 问：**能不能不训 critic，也能得到\"优势\"？**\n\n### 6.2 核心思想（一句话）\n\n对**同一个问题 x，一次性采样一组 G 个回答** `{y₁,…,y_G}`；用奖励模型（或可验证规则）给每个打分 `r_i`；然后**用\"组内相对位置\"算优势**——比组内平均好多少，就正；差多少，就负。这样就**完全不需要 value 网络**。\n\n### 6.3 优势怎么算（背这个）\n\n**算例**：采样 G=4 个回答，奖励 `[0.8, 0.3, 0.9, 0.5]`。\n\n- 均值 = 2.5/4 = **0.625**；标准差 ≈ **0.275**（计算见下）；\n- `A₁≈0.64, A₂≈−1.18, A₃≈1.00, A₄≈−0.45` → 第 3 个组内最好（鼓励），第 2 个最差（抑制）。\n\n### 6.4 目标函数\n\n和 PPO 一样用 clip 目标，只是优势 `A` 来自组内归一化：\n\n```\nL = - E[ min( ρ·A_i , clip(ρ,1-ε,1+ε)·A_i ) ] + β·KL(π_θ ‖ π_ref)\n```\n\n（同样带 KL 约束防跑偏；KL 可折进奖励，同 §3.3。）\n\n### 6.5 为什么特别适合推理任务？\n\n常用**可验证奖励（rule-based，见 §7 RLVR）**：数学题直接判答案对错、代码题直接跑测试——不用训 RM，用规则打分。组内对比天然适配\"同题多种解法\"，且**省掉 critic 大幅降显存**。\n\n```mermaid\nflowchart TD\n    X[问题 x] --> G[采样 G 个回答 y_1..y_G]\n    G --> R[逐个打分 r_1..r_G]\n    R --> A[组内归一化 A_i=(r_i-mean)/std]\n    A --> U[PPO式 clip 更新 π_θ]\n    U --> X\n```",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "A_i = ( r_i − mean(r₁…r_G) ) / std(r₁…r_G)"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "其它方法与关系：TRPO / GSPO / RLVR",
+    "keywords": [
+      "硬约束",
+      "学出来的 RM",
+      "配 PPO 也能配 GRPO",
+      "逐 token 乘积",
+      "GSPO 的改进",
+      "序列级",
+      "好处"
+    ],
+    "answer": "### 7.1 TRPO（PPO 的\"父亲\"）\n\n**TRPO = Trust Region Policy Optimization（2015）**。它和 PPO 想解决同一个问题——\"限制每步改动别跑飞\"，但做法更重：\n\n- 把\"KL ≤ δ\"作为**硬约束**，用**共轭梯度 + 线搜索**解带约束优化。理论更漂亮，但实现复杂、计算贵。\n- **PPO = TRPO 的实用近似**：用 Clip 近似\"信赖域\"效果，省掉共轭梯度，简单且效果接近。所以 PPO 是 TRPO 的\"平民版继承者\"。\n\n### 7.2 RLVR（不是算法，是\"奖励范式\"）\n\n**RLVR = Reinforcement Learning with Verifiable Rewards（可验证奖励的强化学习）**。注意：**它不是某个具体算法，而是一种\"奖励怎么来\"的范式**。\n\n- 传统 RLHF 的奖励来自**学出来的 RM**（可能自己也被骗）；RLVR 的奖励来自**确定性验证器**：数学答案是否匹配、代码测试是否通过、格式是否合规。\n- **关系**：RLVR 是\"奖励来源\"，可以**配 PPO 也能配 GRPO**。DeepSeek-R1 的\"啊哈时刻\"正是 GRPO + RLVR（用规则判数学对错）训出来的。所以别把 RLVR 和 GRPO 当并列算法——它们是\"奖励设计\"与\"优化算法\"的关系。\n\n### 7.3 GSPO（GRPO 的新变体）\n\n**GSPO = Group Sequence Policy Optimization（群体序列策略优化，2025）**。它针对 GRPO 的一个隐患：\n\n- GRPO/PPO 的重要性比率是**逐 token 乘积** `ρ_seq = Π_t ρ_t`，当序列长、或采样自较旧策略（off-policy）时，乘积会极不稳定，导致训练崩。\n- **GSPO 的改进**：把比率改成**序列级**（token 比率的几何平均），并对整个序列用同一个裁剪后的比率更新：\n  \n- **好处**：序列级比率对长度/off-policy 更鲁棒，训练更稳、常与更激进的采样配合。可理解为\"GRPO 的更稳版本\"。\n\n### 7.4 关系一图流\n\n```\n对齐方法谱系\n   │\n   ├─ 奖励来源维度： RM（学出来的）  ────┐\n   │                   vs              │\n   │                 RLVR（验证器） ────┤ 可任意搭配下方\"优化算法\"\n   │                                    │\n   └─ 优化算法维度：                     │\n        TRPO（硬约束信赖域，重）         │\n          └─ PPO（Clip 近似，轻）──┐    │\n                 └─ GRPO（省critic，组内相对）│\n                        └─ GSPO（序列级比率，更稳）\n        DPO（绕开RL，直接偏好监督，独立路线）\n```",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "  ρ_seq = exp( (1/T)·Σ_t log ρ_t )      # 几何平均，比乘积稳\n  L_GSPO = - E[ min( ρ_seq·Â , clip(ρ_seq,1-ε,1+ε)·Â ) ]   # Â 为序列共享优势\n  "
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-8",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "对比表（含新方法）",
+    "keywords": [
+      "TRPO",
+      "PPO",
+      "GRPO",
+      "不需",
+      "GSPO",
+      "DPO",
+      "RLVR",
+      "总流程"
+    ],
+    "answer": "| 方法       | 类型   | 在线/离线        | 需 RM?   | 需 critic? | 奖励来源    | 显存/复杂度      | 代表场景               |\n| -------- | ---- | ------------ | ------- | --------- | ------- | ----------- | ------------------ |\n| **TRPO** | 优化算法 | 在线           | 需       | 需         | RM/环境   | 高（共轭梯度）     | 早期 RL 理论           |\n| **PPO**  | 优化算法 | 在线           | 需       | 需（4模型）    | RM      | 高           | ChatGPT 初代对齐       |\n| **GRPO** | 优化算法 | 在线           | 可 RM/规则 | **不需**    | RM/RLVR | 中（省 critic） | 数学/推理（DeepSeek-R1） |\n| **GSPO** | 优化算法 | 在线           | 可 RM/规则 | **不需**    | RM/RLVR | 中（更稳）       | 长序列/激进采样           |\n| **DPO**  | 对齐路线 | 离线           | **不需**  | 不需        | 偏好对     | 低           | 稳定易复现              |\n| **RLVR** | 奖励范式 | （配 PPO/GRPO） | 不需(验证器) | 视算法       | 验证器     | —           | 可验证任务              |\n\n> **一句话理清**：RLHF 是\"用人类反馈做 RL\"的**总流程**；PPO/TRPO/GRPO/GSPO 是其中的**优化算法**（TRPO 是父、PPO 是实用版、GRPO 省 critic、GSPO 更稳）；RLVR 是**奖励来源范式**（可配任意算法）；DPO 是**绕开整个 RL 流程**、直接拿偏好做监督对齐的**独立路线**。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-11-强化学习-2-9",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "实际训练脚本骨架（工程速览）",
+    "keywords": [
+      "① TRL",
+      "③ OpenRLHF",
+      "生成",
+      "训练",
+      "Q2：MDP 五要素？",
+      "Q12：DPO 优缺点？",
+      "不要 critic",
+      "Q14：GRPO 优势算例？"
+    ],
+    "answer": "生产级对齐常用三个框架，思路一致：**SFT → 训 RM → RL（PPO/GRPO）**。\n\n**① TRL（HuggingFace，最易上手）**\n\n**② DeepSpeed-Chat（微软，多卡分布式）**  \n三段式 API：`stage1_supervised_finetune` → `stage2_reward_model_train` → `stage3_ppo_train`，底层用 DeepSpeed ZeRO 把 4 个模型分卡。\n\n**③ OpenRLHF（高吞吐，Ray+Actor 解耦）**  \n把 actor / critic / RM / ref 拆成独立 actor，用 vLLM 做生成、单独训练器做更新，支持 70B+ 模型在有限卡上 RLHF。\n\n> 工程要点：RL 阶段**生成（rollout）**&#x4E0E;**训练（update）**&#x901A;常分离——用推理引擎（vLLM）批量生成回答，再喂给训练器算 PPO/GRPO 损失。这是显存与吞吐的关键。\n\n# Part 2 · 常见问题清单（面试速记）\n\n**Q1：什么是强化学习？和 supervised learning 区别？**  \nA：智能体在环境里试错、靠奖励信号最大化长期回报；监督学习给标准答案 x→y，RL 只有对错反馈、无标准答案，要自己摸索策略。\n\n**Q2：MDP 五要素？**  \nA：状态 s、动作 a、策略 π(a|s)、奖励 r、状态转移 P(s'|s,a)；加折扣 γ 与优势 A(s,a)。\n\n**Q3：REINFORCE 是什么？和 PPO 关系？**  \nA：最朴素的策略梯度，∇J=E[R·∇logπ]，用基线降方差引出\"优势\"。PPO = REINFORCE + 重要性采样复用 + Clip 限步长 + 用优势替代总回报。\n\n**Q4：为什么大模型要对齐？为何用 RL 而非再 SFT？**  \nA：预训练只最大化续写概率≠符合人类偏好。RL 擅长\"只有相对比较、无绝对标准答案\"，人类易给\"两回答哪个好\"的偏好。\n\n**Q5：RLHF 三阶段？各阶段数学？**  \nA：① SFT 交叉熵 `−Σlogπ(y_t|x,y_<t)`；② RM 用 Bradley-Terry `P(y_w≻y_l)=σ(r_w−r_l)`、损失 `−logσ(r_w−r_l)`；③ PPO 以 `r_total=r_φ−β·KL` 为奖励优化，`L=E[L^CLIP−c1 L^VF+c2 H]`。\n\n**Q6：Bradley-Terry 模型是什么？RM 怎么训？**  \nA：用分数差表达胜率 `σ(r_w−r_l)`；RM 在偏好对 `(x,y_w,y_l)` 上最小化 `−logσ(r_w−r_l)`，只学相对分。\n\n**Q7：PPO 为什么叫\"近端\"？核心机制？**  \nA：限制每步策略改动别跑飞（信赖域思想）。核心 = 重要性采样（ρ=π_θ/π_old 复用旧数据）+ Clip（ρ 裁到 [1-ε,1+ε]）。\n\n**Q8：PPO 完整目标含哪些项？KL 在哪？**  \nA：`L=E[L^CLIP − c1·L^VF + c2·H]`；KL 在 RLHF 里折进 token 级奖励 `r_total=r_φ−β·KL(π_θ‖π_ref)`（也可作显式项）。\n\n**Q9：PPO 训练同时加载几个模型？协作？**  \nA：4 个——policy(被训)、critic(算优势)、RM(打分)、reference(算 KL 锚点)。后两者冻结。\n\n**Q10：DPO 为何能跳过 RM 和 PPO？**  \nA：KL 约束下最优策略有闭式解 `π*∝π_ref·exp(r/β)`，反解 r 用策略概率表示，代入 Bradley-Terry 偏好约束即坍塌成监督损失。\n\n**Q11：DPO 损失 + 何时损失小？**  \nA：`L_DPO=−logσ(β·[log(π_θ(y_w)/π_ref(y_w))−log(π_θ(y_l)/π_ref(y_l))])`；y_w 相对概率>y_l 时损失小。\n\n**Q12：DPO 优缺点？**  \nA：优——离线、稳定、省显存、好复现；缺——离线与真实分布有偏、依赖数据质量、对可验证答案不如 GRPO 直接。\n\n**Q13：GRPO 与 PPO 最大区别？**  \nA：GRPO **不要 critic**。同问题采 G 个回答，组内相对优势 `A_i=(r_i−mean)/std`，省价值网络、降显存。\n\n**Q14：GRPO 优势算例？**  \nA：奖励 `[0.8,0.3,0.9,0.5]`→均值 0.625、std≈0.275→`A≈[0.64,−1.18,1.00,−0.45]`。\n\n**Q15：GRPO 为何适合推理？RLVR 是什么？**  \nA：可用可验证奖励（答案对错/测试通过）替代 RM；组内对比适配同题多解、省 critic。RLVR=用验证器给奖励的范式，可配 PPO 或 GRPO（非独立算法）。\n\n**Q16：TRPO 与 PPO 关系？**  \nA：TRPO 用硬约束 `KL≤δ`+共轭梯度（重）；PPO 用 Clip 近似信赖域（轻），是 TRPO 的实用继承者。\n\n**Q17：GSPO 与 GRPO 区别？**  \nA：GRPO 用逐 token 比率乘积（长序列/off-policy 不稳）；GSPO 用序列级几何平均比率+序列共享优势，更稳，可配更激进采样。\n\n**Q18：四/多种方法关系一句话？**  \nA：RLHF 是总流程；TRPO→PPO→GRPO→GSPO 是优化算法谱系（省 critic、更稳）；RLVR 是奖励范式可配任意算法；DPO 是绕开 RL 的独立监督路线。\n\n**Q19：什么是奖励黑客？怎么防？**  \nA：策略钻 RM 空子刷高分说漂亮话不解决问题。防：KL 约束别离参考太远；用可验证奖励（RLVR）减少被钻空间。\n\n**Q20：生产对齐用什么框架？**  \nA：TRL（易用，SFT/Reward/PPO/GRPO Trainer）、DeepSpeed-Chat（多卡三段式）、OpenRLHF（Ray 解耦 actor，vLLM 生成+训练分离，支持 70B+）。\n\n## 待补充 / 可深化\n\n- 价值网络 `V_ψ` 与目标 `L^VF` 的 GAE（广义优势估计）细节。\n- DPO 的若干变体：IPO（防过拟合偏好对）、KTO（只给\"好/坏\"单样本、无需成对）。\n- 长度归一化、长度惩罚等推理对齐的常见 trick。\n\n### 4.2 两个关键技术（为什么重要 + 算例）\n\n**① 重要性采样（Importance Sampling）——解决\"数据复用\"**\n\n- **问题**：纯在线 RL 每更新一步就要重新采样新数据，极贵。\n- **做法**：用**旧策略 π_old 采样**一批数据存起来，再用这批**旧数据多次更新新策略 π_θ**（离线复用）。两者概率之比叫重要性比率：\n  ```\n  ρ = π_θ(a|s) / π_old(a|s)\n  ```\n  `ρ>1`：新策略比旧策略更倾向这个动作；`ρ<1`：反之。\n- **算例**：某动作 `π_old=0.2`，更新后 `π_θ=0.3` → `ρ=1.5`，说明新策略更爱这动作，该动作的优势会被放大 1.5 倍计入梯度。\n\n> **答疑：怎么理解\"旧策略采样、新策略更新\"？**（你没系统学过 RL，这里拆开讲）\n>\n> - **旧策略 `π_old` 是什么**：就是\"采样那一刻\"的模型参数。比如训练前先拿当前模型 `π_θ`（参数 θ₀）去生成一批数据，这批数据就是 `π_old` 产出的。\n> - **新策略 `π_θ` 是什么**：用这批旧数据做了几次梯度更新后，参数变成 θ₁、θ₂……此时的模型就是\"新策略\"。**新策略不是另起炉灶，而是在旧策略基础上小步改出来的。**\n> - **怎么采样、采样多少**：拿 `π_old` 在任务环境里\"跑\"——给一批问题 x，让模型生成回答 y，记录 `(x, y, 动作, 奖励)` 存进一个缓冲区（replay buffer）。量上通常是一个 **batch（如几千条轨迹 / 固定收集步数）**，资源够就多采一些。\n> - **新策略怎么得到**：直接在这批**已存的旧数据**上，用 SGD 算梯度、多次小步更新参数。关键技巧就是上面的\"重要性比率 ρ\"——因为数据是按旧策略采的，而我们要更新新策略，两者分布不同，所以用 ρ 把旧数据\"折算\"成对新策略有效的梯度。\n> - **为什么这么绕**：纯在线 RL 每更新一步就得重新采样，极贵；复用旧数据能省几十倍采样成本。代价是要靠 ρ 校正分布偏差，并用 Clip 防止一步改太猛（见 ②）。\n\n**② Clip（裁剪）——解决\"步子太大\"**\n\n- **问题**：光有 ρ 还不够——如果 ρ 被推到 10（新策略疯狂偏爱上这动作），一步就跑飞了。\n- **做法**：把 ρ **裁剪**到 `[1-ε, 1+ε]`（ε 通常 0.2，即允许 ±20% 波动）。超出部分直接\"削平\"，不让它继续推。\n- **算例**：ε=0.2。`ρ=1.5` → `clip(1.5, 0.8, 1.2)=1.2`（削掉超出的 0.3）；`ρ=0.5` → `clip=0.8`（兜底到 0.8，不让你过度抛弃这个动作）。\n### 4.3 目标函数（完整版，含 KL）\n\n**策略的裁剪代理损失**（你之前看到的 `L^CLIP`）：\n\n```\nL^CLIP = - E[ min( ρ·A ,  clip(ρ, 1-ε, 1+ε)·A ) ]\n```\n\n- `A` 是优势（动作比平均好多少）；\n- `min(ρ·A, clip·A)`：**取\"不冒进\"的那个**，防止更新过猛；\n- 整体取负号+期望，因我们要**最大化**该目标。\n\n**完整 PPO 目标**（加上价值损失与熵，并把 KL 折进奖励，前面 §3.3 已给）：\n\n```\nL = E[ L^CLIP(θ)  −  c1·L^VF(V_ψ)  +  c2·H(π_θ) ]\n```\n\n**你之前问\"KL 惩罚去哪了\"——答**：RLHF 实操中 KL 是以 **token 级惩罚折进奖励 `r_total = r_φ − β·KL`**（§3.3）；也有版本把它作为显式项 `β·KL(π_θ‖π_ref)` 加到目标里。两种等价思路，都起\"别跑太远\"的作用。\n\n**`L^CLIP` 算例**：设 ε=0.2。\n\n- 情形 a：`A=+1.0`（这动作比平均好），`ρ=1.5` → `ρ·A=1.5`，`clip·A=1.2` → `min=1.2` → 损失 `-1.2`（被裁剪，没冲太狠）。\n- 情形 b：`A=+1.0`，`ρ=0.9` → `0.9` → 损失 `-0.9`（没越界，正常用）。\n- 情形 c：`A=-1.0`（这动作比平均差），`ρ=1.5` → `ρ·A=-1.5`，`clip·A=-1.2` → `min=-1.5`（取更小，即惩罚不被 clip 保护，照罚）。\n\n### 4.4 为什么同时养 4 个模型？怎么协作？\n\n在线 RLHF 同一时刻需 4 个网络，各司其职：\n\n| 模型                     | 角色                              | 是否更新    |\n| ---------------------- | ------------------------------- | ------- |\n| **Policy（actor）`π_θ`** | 正在被训练、负责生成的模型                   | ✅ 主训练对象 |\n| **Value（critic）`V_ψ`** | 估算状态未来总回报，用来算优势 `A = 回报 − V(s)` | ✅ 同步训练  |\n| **Reward Model `r_φ`** | 对生成内容打奖励分                       | ❌ 冻结    |\n| **Reference `π_ref`**  | 初始 SFT 模型，提供 KL 锚点防跑偏           | ❌ 冻结    |\n\n**协作流程图**：\n\n```mermaid\nflowchart TD\n    X[问题 x] --> POL[π_θ 生成 y]\n    POL --> RM[r_φ 打分 → 奖励]\n    POL --> REF[π_ref 算 KL]\n    RM --> RT[r_total = r - β·KL]\n    POL --> CRIT[V_ψ 估 V s]\n    RT --> ADV[A = 回报 - V]\n    CRIT --> ADV\n    ADV --> UPD[PPO 更新 π_θ 和 V_ψ]\n    REF --> RT\n    UPD --> POL\n```\n\n> PPO 强大但**贵且复杂**——4 个模型同时占显存（尤其 critic），value 网络还引入额外方差。这正是 DPO（§5）、GRPO（§6）想简化的地方。\n\n### 4.5 三个频率：Rollout / Epoch / Minibatch（训练循环怎么转）\n\n理解\"更新频率\"必须分清 PPO 里**嵌套的三层频率**——很多人把\"梯度步\"误当成策略切换点，根源就是没区分这三层：\n\n| 频率               | 含义                         | 典型值                | 发生时做什么                                                            |\n| ---------------- | -------------------------- | ------------------ | ----------------------------------------------------------------- |\n| **Rollout 频率**   | 多久重新采样一批数据、重新定一次 `θ_old`   | 每收集一个 batch 的轨迹就一次 | 用当前 `θ_old` 在环境里生成新轨迹，写入 buffer；并把当前 θ **赋值**给 `θ_old`（旧策略在此滚动更新） |\n| **Epoch 频率**     | 每批数据上反复训练几轮                | K = 4~10 个 epoch   | 在同一批 rollout 数据上做 K 轮完整遍历，每轮更新若干次 θ                               |\n| **Minibatch 频率** | 每个 epoch 内把 batch 拆成几小份算梯度 | 8~64 个小批           | 每个 minibatch 算一次梯度、做一次参数更新（θ 变一次）                                 |\n\n- **训练总更新步数 = 批数 × epoch × minibatch 数**。\n- **为什么这么设计**：Rollout 采样最贵（要真跑模型生成），所以一批数据要**复用 K 轮**才重新采样；复用越狠越省采样，但越 off-policy（θ 漂得离 `θ_old` 越远），必须靠 Clip（§4.2）兜住。\n- **类比**：老师用 `θ_old` 出一套卷子（rollout）→ 学生（θ）拿这套卷子反复改错 K 遍（K 个 epoch，每遍分几小份做 minibatch 梯度更新，卷子不变）→ 改完定稿，这版学生成为下一轮出题的\"旧学生\"（`θ_old` 更新）→ 老师出新卷子。\n\n> **本节与 §4.1.5 的呼应**：Rollout 频率的边界，正是\"旧策略\"被重新定义的时刻；Epoch/Minibatch 频率内的所有梯度更新，都只改 `π_θ`、不触发 `θ_old` 的更新。所谓\"更新频率\"在 PPO 里不是单一数字，而是\"采一批、练 K 轮\"这个循环。",
+    "explanation": "只允许温和改动。",
+    "code": {
+      "language": "python",
+      "content": "from trl import SFTTrainer, RewardTrainer, PPOTrainer, GRPOTrainer\n# 1) SFT\nSFTTrainer(model, train_dataset=sft_data).train()\n# 2) RM：RewardTrainer 内部即用 Bradley-Terry 成对损失\nRewardTrainer(model=rm, train_dataset=pref_data).train()\n# 3) PPO / GRPO\nPPOTrainer(model, reward_model=rm, ref_model=ref).train()\nGRPOTrainer(model, reward_funcs=[math_verifier]).train()  # GRPO+RLVR"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-11-强化学习"
+    ],
+    "tags": [
+      "强化学习"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-11-强化学习",
+      "file": "11-强化学习.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 到底是什么？",
+    "keywords": [
+      "通用语言"
+    ],
+    "answer": "- 谁提的：Anthropic 于 **2024 年 11 月**开源，2025 年起被大量客户端（Claude Desktop、各类 IDE 插件、OpenAI Agents SDK 等）跟进支持。\n- **最经典的类比**：USB-C 是硬件接口的通用标准（任何 USB-C 线都能插任何 USB-C 口）；**MCP 就是 AI 应用的\"USB-C\"**——任何实现了 MCP 客户端的 Host，都能直接插上任何实现了 MCP 的服务端，无需为每一对组合写定制代码。\n- **本质**：在「模型应用」和「外部能力（工具 / 数据 / 提示模板）」之间，定了一套**通用语言（基于 JSON-RPC 2.0 的协议）**。以前各家各写各的胶水代码，现在统一成\"客户端 ↔ 服务端\"一套话术。\n\n> 名词补齐：MCP 不绑定某家大模型，也不规定模型怎么思考，它只规定\"应用和外部程序怎么说话\"。",
+    "explanation": "MCP（Model Context Protocol，模型上下文协议）是一套开放标准，用来把\"AI 应用\"和\"外部数据/工具\"之间的连接做成可插拔的标准件。",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "为什么需要 MCP？（解决的真实痛点）",
+    "keywords": [
+      "N × M",
+      "MCP 把它降为 M + N",
+      "重复造轮子",
+      "3 个 AI 应用",
+      "没有 MCP",
+      "有 MCP",
+      "1 次",
+      "增长趋势"
+    ],
+    "answer": "**核心痛点 = \"M × N 集成地狱\"。**\n\n- 没有标准时：有 `N` 个 AI 应用（Chatbot、IDE、Agent 框架……），`M` 个外部工具/数据源（数据库、日历、文件系统、API……），要把它们两两打通，需要写 **N × M** 套定制集成代码。每加一个工具，所有应用都得改；每换一个应用，所有工具都得重写。\n- **MCP 把它降为 M + N**：应用侧实现一次 MCP 客户端，工具侧实现一次 MCP 服务端，二者即插即用。**写一次 server，所有支持 MCP 的 Host 都能用；换一个模型，工具不用动。**\n\n其他被解决的痛点：\n\n- **工具调用格式各家不一**：OpenAI 的 `function calling`、Anthropic 的 `tool_use` 字段格式不同，应用层得分别适配；MCP 在 client↔server 之间统一了\"列能力 / 调工具 / 回结果\"的协议。\n- **上下文供给无标准**：除了\"调工具\"，给模型喂\"只读背景资料\"（文件、日志、DB 记录）也没有统一方式，MCP 用 Resources 原语补上了。\n- **重复造轮子**：每个团队都在写\"怎么连 Slack、怎么连 Postgres\"，MCP 让这些变成可共享的标准 server。\n\n### 2.1 具体案例：M×N 到底有多痛？\n\n假设有 **3 个 AI 应用（Host）**：Claude Desktop、Cursor IDE、自研客服 Bot；有 **4 个外部工具/数据源**：Postgres 数据库、GitHub、Slack、本地文件系统。\n\n**没有 MCP（要写 N×M = 3×4 = 12 套集成）**：\n\n- Claude Desktop 要写 4 套适配器（连 PG / GitHub / Slack / 文件）\n- Cursor 要写 4 套\n- 客服 Bot 要写 4 套\n- 合计 12 套；且**每新增一个工具（如 Jira），要给 3 个应用各加 1 套 = 再写 3 套**；每新增一个应用，要给 4 个工具各写 1 套。\n\n**有 MCP（只需写 M+N = 3+4 = 7 份）**：\n\n- 应用侧：3 个 Host 各实现 **1 次** MCP Client = 3 份\n- 工具侧：4 个工具各实现 **1 次** MCP Server = 4 份\n- 合计 7 份。此时**新增 Jira，只需写 1 个 Jira MCP Server，3 个应用自动都能用**（边际成本 1 而非 3）。\n\n**增长趋势**：集成代码量随应用数 `A`、工具数 `T` 增长——无标准是 **O(A×T)**，有 MCP 是 **O(A+T)**。当 `A=10`、`T=20` 时，无标准是 200 份 vs 有 MCP 仅 30 份，差距随规模指数级拉开。这就是\"把乘法变加法\"的直观含义。\n\n> 一句话记忆：**MCP 不是\"让模型更聪明\"，而是\"让模型能标准地用上外部能力\"，把集成成本从乘法变成加法。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "核心组件（Host / Client / Server / 数据源）",
+    "keywords": [
+      "MCP Host",
+      "MCP Client",
+      "MCP Server",
+      "Data Source",
+      "多个",
+      "一个",
+      "本地",
+      "远程"
+    ],
+    "answer": "MCP 是**客户端—服务端（C/S）架构**，一次连接里有四类角色：\n\n| 角色                   | 是什么                                                       | 职责                                    |\n| -------------------- | --------------------------------------------------------- | ------------------------------------- |\n| **MCP Host（宿主）**     | 用户直接交互的 AI 应用（Claude Desktop、Cursor/VSCode 插件、自研 Chatbot） | 跑一个或多个 MCP Client，负责把工具结果回填给模型、呈现给用户  |\n| **MCP Client（客户端）**  | Host 内部的组件，**与单个 Server 维持 1:1 连接**                       | 协议握手、消息路由、把 Server 能力转成模型可调用的形式       |\n| **MCP Server（服务端）**  | 轻量程序，暴露\"能力\"给模型                                            | 实现 tools/resources/prompts，自己负责访问底层数据 |\n| **Data Source（数据源）** | Server 背后连的文件、数据库、API、浏览器等                                | 真正的\"外部世界\"                             |\n\n**关键点**：\n\n- 一个 Host 可以有**多个** Client，每个 Client 连**一个** Server（1:1）。所以\"一个 Host + 多个 Server\"靠\"一个 Host 内多个 Client\"实现。\n- Server 可以跑在**本地**（作为子进程）或**远程**（HTTP 服务）。\n\n### 3.1 具体案例：一个 Host 为什么要有多个 Client？\n\n继续 §2 的场景：你在 **Claude Desktop（一个 Host）** 里同时配置了「文件系统 Server」「GitHub Server」「Postgres Server」三个 MCP server。Claude Desktop 内部就**维护 3 个 MCP Client 实例**，分别与这 3 个 Server **一对一**连接：\n\n- `Client-1` ↔ 文件系统 Server（stdio 子进程，管 `~/` 下的读写）\n- `Client-2` ↔ GitHub Server（HTTP，管仓库操作）\n- `Client-3` ↔ Postgres Server（HTTP，管数据库查询）\n\n**为什么是 1:1、不能多个 Server 共用一个 Client？**\n\n- 每个 Server 是独立的进程/服务，有**独立的连接、独立的状态、独立的消息 id 空间**；协议要求每个连接单独做 `initialize` 握手、单独维护 capabilities。\n- 若多个 Server 共用一个 Client，会混淆\"哪个 response 对应哪个 Server 的请求\"、状态串台。**1 个 Client 管 1 个 Server 是最干净的隔离单元**。\n- **Host 充当\"总线\"**：把多个 Client 聚合，统一把它们的 tools 暴露给 LLM。\n\n**一次真实调用**：用户说\"读下 `~/report.md` 然后提交到 GitHub 仓库\"——Host 通过 `Client-1` 让文件系统 Server 读文件，通过 `Client-2` 让 GitHub Server 提交。三个 Client 各管各的连接，Host 负责协调与结果汇总。\n\n**架构图（mermaid）**：\n\n```mermaid\nflowchart LR\n    U[\"用户\"] --> H[\"MCP Host\\n(Claude Desktop / IDE)\"]\n    H --> C1[\"MCP Client 1\"]\n    H --> C2[\"MCP Client 2\"]\n    C1 -->|\"JSON-RPC 2.0\"| S1[\"MCP Server A\\n(暴露 tools / resources)\"]\n    C2 -->|\"JSON-RPC 2.0\"| S2[\"MCP Server B\"]\n    S1 --> D1[(\"本地文件 / 数据库\")]\n    S2 --> D2[(\"远程 API\")]\n```",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "三大原语（Server 到底暴露什么能力？）",
+    "keywords": [
+      "原语",
+      "谁触发",
+      "Tools",
+      "模型主动",
+      "Resources",
+      "应用/用户",
+      "Prompts",
+      "用户"
+    ],
+    "answer": "MCP 把\"外部能力\"分成三类**原语（primitive）**，区分的核心维度是「**谁触发**」和「**有没有副作用**」：\n\n| 原语                | 触发方           | 有无副作用   | 类比        | 典型例子                 |\n| ----------------- | ------------- | ------- | --------- | -------------------- |\n| **Tools（工具）**     | **模型主动**决定调用  | 有（执行动作） | 函数调用      | 查天气、发邮件、跑 SQL、调 API  |\n| **Resources（资源）** | **应用/用户**控制注入 | 只读      | 附件/文件     | 文件内容、DB 记录、日志片段      |\n| **Prompts（提示模板）** | **用户**主动选择    | 无       | 预设 prompt | \"用标准 code review 模板\" |\n\n- **Tools**：模型在推理时自主决定\"我要调这个工具\"，背后就是 function calling。每个 tool 用 **JSON Schema** 声明入参。\n- **Resources**：像是\"可以给模型看的背景材料\"，由应用或用户决定要不要塞进上下文（不像 tools 由模型自己触发），用于补充知识而非执行动作。\n- **Prompts**：可复用的提示词模板，用户点一下就能用，常用于规范化某类任务。\n> 记忆口诀：**Tools 模型调、Resources 人给看、Prompts 人选用。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "完整调用流程（含生命周期）",
+    "keywords": [
+      "③ LLM 只提议不干活",
+      "需补三点",
+      "并行分发",
+      "阶段 A · 启动与建表",
+      "A1",
+      "A2",
+      "A3",
+      "A4"
+    ],
+    "answer": "一次\"用户提问 → 模型用工具 → 拿到结果\"的全过程，拆成「启动建表」和「一轮问答」两阶段。下面的 **5.1 先评估你给的流程**，再给完整版。\n\n### 5.1 先评估你写的流程（整体正确，亮点抓得准）\n\n- ✅ **\"tools/list 建名字典\"**：准确。Client 调 Server 的 `tools/list`，把各 Server 的 tool 清单 + 本地函数 schema 合并成一个大 tools 表给 LLM。\n- ✅ **\"③ LLM 只提议不干活\"**：这是 function calling 的本质，理解到位。\n- ✅ **\"④ 路由分发：MCP 工具走 client.call_tool，本地函数进程内直接返回（不走 MCP）\"**：这是很多人忽略的关键点——**MCP 不是唯一工具通道，本地函数可以并存**；模型只看到一张统一的 tools 列表，路由是 Agent/Host 层的职责。\n- ⚠️ **需补三点（下面完整版已含）**：\n  1. 启动阶段除了\"拉起/连上\"，还必须有 **`initialize` 握手**（协商 capabilities），否则 Server 不会响应 `tools/list`；\n  2. 工程上要补 **并行分发**（LLM 一次可返回多个 `tool_calls`）、**调用失败也要回填 error 作为 obs**（让模型知道失败并重试）；\n  3. **Anthropic 与 OpenAI 的 tool message 格式不同**（伪代码用 OpenAI 风格，另注 Anthropic 差异）。\n\n### 5.2 完整全过程（合并 MCP 握手 + 你的流程）\n\n**阶段 A · 启动与建表（只做一次）**\n\n- **A1**：Host 按配置启动/连接各 MCP Server（stdio spawn 子进程 或 HTTP 常驻）。\n- **A2**：每个 Client 与对应 Server 做 `initialize` → `initialized` 握手。\n- **A3**：每个 Client 调 `tools/list`（及 `resources/list`、`prompts/list`），拿到能力清单。\n- **A4**：Host 把\"所有 MCP tools 的 JSON Schema\" **∪** \"本地函数的 schema\" 合并成一张 **tools 表**，作为后续每次请求 LLM 的工具目录。\n\n**阶段 B · 一次用户提问到最终回答（可多轮）**\n\n1. 用户提问（如\"查下沪宁高速堵不堵，再算绕行多久\"）。\n2. Agent 组装 `messages` + `tools`（= 本地函数 schema ∪ MCP tools schema）→ 请求 LLM。\n3. LLM 返回 `assistant` 消息，含 `tool_calls:[{id:c1,name:\"map_query\",args},{id:c2,name:\"route_calc\",args}]`——**只提议，不执行**。\n4. **路由分发**（可并行）：\n   - c1 属 MCP 工具 → `client.call_tool(\"map_query\", args)`（stdio 写子进程 / HTTP POST）→ Server 真去调地图 API → 回 content；\n   - c2 属本地函数 → 进程内 `route_calc(args)` 直接返回，**不走 MCP**。\n   - 两者（含失败 error）都转成 **observation（obs）**。\n5. 把 obs 以 `{\"role\":\"tool\",\"tool_call_id\":c1,\"content\":\"<obs>\"}`（c2 同理）append 回 `messages`。\n6. 再次请求 LLM：若又返回 `tool_calls`，回到 ④；否则输出最终 `assistant` 文本。\n7. Agent 把最终回答流式/整段打印给用户。\n\n> 上面是\"完整版\"文字流程；下面时序图是**简化单 MCP Server 版**（不含本地函数并存），用于看清 MCP 那段握手与往返：\n\n```mermaid\nsequenceDiagram\n    participant U as 用户\n    participant H as Host + Client\n    participant L as LLM\n    participant S as MCP Server\n    U->>H: 提出一个问题\n    H->>S: initialize / list_tools\n    S-->>H: 能力清单(JSON Schema)\n    H->>L: 问题 + 工具描述\n    L-->>H: tool_use(name, input)\n    H->>S: tools/call\n    S-->>H: tool_result\n    H->>L: 把结果回填到上下文\n    L-->>U: 生成最终回答\n```\n\n### 5.3 完整伪代码（含路由 / 循环 / 并行 / 失败回填）\n\n> **Anthropic 格式差异**：上面的 `tool` message 是 **OpenAI 风格**；Claude 把工具结果放在 `{\"role\":\"user\",\"content\":[{\"type\":\"tool_result\",\"tool_use_id\":c1,\"content\":obs}]}`——语义相同、字段名不同。MCP 本身不关心上层用哪家，它只管 client↔server 那段 JSON-RPC。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "# ===== 阶段 A：连接各 Server，建统一 tools 表（只跑一次）=====\ndef bootstrap(host_config):\n    clients = {}            # server_name -> MCPClient\n    tool_registry = {}      # tool_name -> {\"kind\": \"mcp\"/\"local\", \"target\": ...}\n    TOOLS_SCHEMA.clear()\n    local_funcs = host_config[\"local_functions\"]   # 本地函数: {name: callable}\n\n    for srv in host_config[\"mcp_servers\"]:\n        client = connect(srv)              # A1：stdio spawn 或 http 常驻\n        client.initialize()                # A2：握手（必须，否则 tools/list 不响应）\n        for t in client.list_tools():      # A3：tools/list\n            tool_registry[t[\"name\"]] = {\"kind\": \"mcp\", \"target\": client}\n            TOOLS_SCHEMA.append(t[\"schema\"])     # A4：并入 tools 表\n    for name, fn in local_funcs.items():\n        tool_registry[name] = {\"kind\": \"local\", \"target\": fn}\n        TOOLS_SCHEMA.append(fn.schema)            # 本地函数 schema 也并入\n\n# ===== 阶段 B：一轮用户提问到最终回答 =====\ndef run_turn(user_msg, messages, llm):\n    messages.append({\"role\": \"user\", \"content\": user_msg})\n    while True:\n        resp = llm.chat(messages=messages, tools=TOOLS_SCHEMA)   # ② 请求 LLM\n        if not resp.tool_calls:                                  # ⑥ 无 tool_calls → 结束\n            messages.append({\"role\": \"assistant\", \"content\": resp.text})\n            return resp.text                                      # ⑦ 打印给用户\n        # ③ LLM 只提议；④ 路由分发（此处顺序示例，生产可用线程池并发）\n        messages.append({\"role\": \"assistant\", \"content\": None,\n                         \"tool_calls\": resp.tool_calls})\n        for call in resp.tool_calls:                             # 可并行执行\n            entry = tool_registry[call.name]\n            try:\n                if entry[\"kind\"] == \"mcp\":\n                    obs = entry[\"target\"].call_tool(call.name, call.args)   # 走 MCP\n                else:\n                    obs = entry[\"target\"](**call.args)                     # 本地函数, 不走 MCP\n            except Exception as e:\n                obs = f\"ERROR: {e}\"                                # 失败也回填, 让模型知道\n            # ⑤ 以 tool_call_id 回写 observation\n            messages.append({\"role\": \"tool\",\n                             \"tool_call_id\": call.id,\n                             \"content\": str(obs)})\n        # 回到循环顶部再求 LLM（⑥ 的多轮 ReAct 循环）"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "通信机制（传输层：编码 + 传输方式）",
+    "keywords": [
+      "② 传输方式一：stdio",
+      "子进程",
+      "安全",
+      "HTTP POST",
+      "SSE",
+      "单个端点"
+    ],
+    "answer": "**① 编码格式：JSON-RPC 2.0**\n\n- 所有消息（请求/响应/通知/错误）统一编码成 JSON-RPC。`request` 带 `id`，`response` 回同一个 `id`，`notification` 无 `id`（单向通知）。\n- 例：调工具的请求 = `{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"get_weather\",\"arguments\":{...}}}`。\n\n**② 传输方式一：stdio（标准输入输出）**\n\n- 本地 Server 作为 Host 的**子进程**启动，双方通过 `stdin` / `stdout` 收发 JSON-RPC 文本行。\n- 优点：**安全**（不暴露网络端口）、零网络配置、随 Host 起停。\n- 缺点：仅本机、Server 崩溃会影响 Host 进程树。\n\n**③ 传输方式二：Streamable HTTP（远程，2025 规范）**\n\n- 远程 Server 用 **HTTP POST** 发请求，用 **SSE（Server-Sent Events）** 收流式响应，统一在**单个端点**。\n- 历史：2024-11 初版是\"HTTP + SSE 两套独立传输\"；**2025 年 3 月规范更新为 Streamable HTTP 单端点**，更简洁、支持有状态/无状态会话。\n- 优点：跨网络、可托管为多租户服务；缺点：要处理鉴权、网络、扩缩容。\n\n**三种传输对比**：\n\n| 维度   | stdio     | Streamable HTTP（2025） |\n| ---- | --------- | --------------------- |\n| 部署位置 | 本机子进程     | 远程服务                  |\n| 端口暴露 | 无（走进程管道）  | 有（需 HTTPS + 鉴权）       |\n| 安全边界 | 由本机进程隔离   | 需自行做认证/授权             |\n| 适用   | 本地工具、个人助手 | 团队共享、云端能力             |\n\n**④ 生命周期**：`initialize` → `initialized` →（日常 `notifications` / `requests` / `responses`）→ `shutdown`。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "区分与联系（面试最高频：MCP / Function Calling / CLI / API / 插件 / Agent 框架）",
+    "keywords": [
+      "MCP 是\"协议/传输层标准",
+      "标准化地",
+      "任意",
+      "跨应用复用",
+      "7.2 MCP vs CLI",
+      "CLI",
+      "MCP Server",
+      "AI Client 自动调用"
+    ],
+    "answer": "**7.1 MCP vs Function Calling（最容易混）**\n\n- **Function Calling 是\"模型能力\"**：指模型学会了**输出结构化的工具调用请求**（如 `{\"name\":\"get_weather\",\"arguments\":{...}}`），属于模型侧特性；且**各家格式不同**（OpenAI 的 `functions`、Anthropic 的 `tools` 字段不一样）。\n- **MCP 是\"协议/传输层标准\"**：规定\"模型应用 ↔ 外部程序\"之间怎么**标准化地**列能力、传调用、回结果，属于集成侧。\n- **关系 = 互补，不是替代**：\n  - 没有 MCP，function calling 也能用（模型输出 tool call，应用直接调本地函数）。\n  - 有了 MCP，工具可以来自**任意**本地/远程 Server，且**跨应用复用**（写一次 server，所有 Host 用）。\n  - MCP 的 `tools` 原语，底层正是把 function calling 用统一协议在 client↔server 间传递——**MCP 标准化的不是\"模型怎么想\"，而是\"调用怎么传\"**。\n\n**7.2 MCP vs CLI（命令行工具）**\n\n- **CLI** 是给人/脚本敲的命令程序，输出是**给人看的文本**，得人去解析；调用方要懂参数格式。\n- **MCP Server** 也是可调用程序，但由 **AI Client 自动调用**、按 JSON-RPC 通信、输出**结构化**结果，模型直接消费。\n- **联系**：可以把现有 CLI **包装**成一个 MCP Server（如把 `git` 命令包成 git-mcp-server），让 AI 自动、结构化地使用它——这是 MCP 生态常见的\"旧能力翻新\"做法。\n\n**7.3 MCP vs API**\n\n- API 是程序间接口，但调用方要写**定制代码 + 鉴权 + 解析响应**。\n- MCP 把\"调 API\"标准化成一个 **tool**：客户端无需知道 API 细节，Server 内部封装好，模型只看到统一的工具描述。\n\n**7.4 MCP vs 插件（Plugins）**\n\n- ChatGPT 插件是**厂商封闭生态**（只有指定平台能用、审核严）。\n- MCP 是**开放标准**，任何人可写 Server、任何支持 MCP 的 Host 都能接，不绑定平台。\n\n**7.5 MCP vs Agent 框架（LangChain 等）**\n\n- Agent 框架（LangChain / LlamaIndex / AutoGen）是**编排逻辑**：怎么把\"思考—调工具—观察\"串成循环、怎么管理记忆。\n- MCP 是**连接标准**：定义\"工具怎么被标准化接进来\"。\n- 二者正交：**框架可以接入 MCP Server 作为工具来源**，一个管\"怎么跑\"，一个管\"怎么连\"。\n\n**一张总对比表**：\n\n| 维度  | MCP            | Function Calling | CLI       | API   |\n| --- | -------------- | ---------------- | --------- | ----- |\n| 定位  | 集成协议标准         | 模型能力             | 人用命令行     | 程序间接口 |\n| 谁定义 | Anthropic 开放标准 | 各家 LLM 厂商        | 操作系统/工具作者 | 服务提供方 |\n| 调用方 | AI Client 自动   | 模型输出 + 应用执行      | 人或脚本      | 任何程序  |\n| 输出  | 结构化 JSON-RPC   | 结构化 tool call    | 文本        | 任意格式  |\n| 复用性 | 跨 Host 复用      | 依赖具体应用封装         | 人复用       | 程序复用  |\n\n**7.6 MCP vs A2A（Agent2Agent Protocol，Google，2025-04 开源）**\n\n- **A2A 是什么**：Google 于 **2025 年 4 月**开源的**智能体间通信协议**，专门解决\"**一个 Agent 怎么把任务委派给另一个 Agent**\"。它面向**多智能体协作**——不同团队、不同厂商构建的 Agent，能互相\"发现能力、派发任务、交换结果\"，而不必共享代码或内部状态。\n- **核心抽象**：\n  - **Agent Card（智能体名片）**：每个 Agent 在固定 URL（如 `/.well-known/agent.json`）暴露一张 **JSON 自描述元数据**，写明\"我是谁、能干什么、支持什么输入输出模态、怎么鉴权\"。这是 A2A 的\"能力发现\"机制——相当于 Agent 界的\"服务注册表 + 简历\"。\n  - **Task（任务）**：A2A 的交互单元，围绕一个任务做**状态机**：`submitted → working → input-required → completed / failed`。调用方轮询或靠推送通知跟进任务进度。\n  - **Message / Part**：一条消息由多个 **Part**（文本 / 文件 / 结构化数据）组成，原生支持多模态。\n- **与 MCP 的根本区别（面试必答）**：\n  - **MCP = \"Agent ↔ 工具/数据\"**：纵向连接——让**一个**智能体用上外部函数与资源（类比 **USB-C**，电脑接外设）。\n  - **A2A = \"Agent ↔ Agent\"**：横向连接——让**多个**智能体互相协作（类比**网络协议**，电脑连电脑）。\n  - 二者**互补不冲突**：一个 Agent **内部**用 MCP 接自己的工具；**对外**用 A2A 把子任务派给其他专家 Agent。典型架构：顶层协调 Agent 经 A2A 把\"查数据库\"\"画图表\"\"发邮件\"派给三个专家 Agent，每个专家 Agent 再用 MCP 调自己的底层工具。\n- **记忆口诀**：**MCP 连工具，A2A 连同伴。**\n\n**7.7 MCP vs ACP（Agent Communication Protocol，IBM，2024 开源）**\n\n- **ACP 是什么**：IBM（BeeAI 项目）于 **2024 年**开源的**智能体通信协议**，目标同样是\"让不同智能体互通\"。它的设计哲学是**极简、HTTP 原生、以纯文本 / Markdown 为消息载体**，降低实现与调试门槛。\n- **ACP 与 A2A 的关系**：两者**都解决\"Agent 间通信\"**，是同一方向上的两个方案。差异在风格：\n  - **ACP**：无状态 HTTP + **人类可读的纯文本/Markdown 消息**，强调\"简单、可直接 curl 调试、与 REST 习惯一致\"。\n  - **A2A**：有 **Agent Card 自发现 + Task 状态机 + 多模态 Part**，强调\"企业级多智能体编排、能力发现、任务生命周期管理\"。\n- **ACP vs MCP**：和 A2A 一样，ACP 也是\"Agent 对 Agent（或 Agent 对客户端）\"的**横向**协议，不是\"Agent 对工具\"的纵向协议——所以它与 MCP 的区别同 §7.6：**横 vs 纵**。\n\n**7.8 一张总表：Agent 相关协议怎么排布？**\n\n| 维度        | MCP                  | A2A (Google)            | ACP (IBM)            | Function Calling  |\n| --------- | -------------------- | ----------------------- | -------------------- | ---------------- |\n| 通信双方      | Agent ↔ **工具/数据**     | Agent ↔ **Agent**       | Agent ↔ Agent       | 模型 ↔ 调用请求        |\n| 提出方（时间）   | Anthropic (2024-11)   | Google (2025-04)        | IBM/BeeAI (2024)     | 各家 LLM 厂商        |\n| 核心抽象      | tools / resources / prompts | Agent Card / Task   | 文本消息 / 会话           | tool call        |\n| 传输        | JSON-RPC（stdio / HTTP） | HTTP + JSON（SSE 流式）    | 无状态 HTTP + 文本        | 模型输出结构          |\n| 自发现能力     | 有（list_tools 等）      | 有（Agent Card）          | 弱（需约定端点）           | 无（应用硬编码）        |\n| 解决的根本问题   | 标准化**接工具**           | 多智能体**协作委派**          | 极简**多智能体通信**        | 模型**结构化调用**     |\n| 拓扑        | 纵向（Host 内部）          | 横向（Agent 之间）          | 横向（Agent 之间）        | 单点（模型侧）        |\n\n> 一句话记忆：**MCP 是纵向的 USB-C（连外设），A2A/ACP 是横向的网络协议（连同伴）；三者不在同一层，常常一起用——Agent 内部用 MCP 接工具，Agent 之间用 A2A/ACP 协作。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-8",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "优缺点",
+    "keywords": [
+      "优点",
+      "解耦可插拔",
+      "缺点",
+      "生态年轻",
+      "依赖 Host 支持",
+      "上下文成本",
+      "资源占用",
+      "调试复杂"
+    ],
+    "answer": "**优点**：\n\n1. **标准化降集成成本**：从 N×M 降到 N+M，新增工具/应用几乎零边际成本。\n2. **解耦可插拔**：换模型不影响工具，换工具不影响应用；生态共享（写一次 server 处处用）。\n3. **跨厂商不锁定**：协议开放，不绑定某家 LLM 或某家 Host。\n4. **安全边界清晰**：本地 stdio Server 不暴露端口，权限由 Host 管控；远程有统一鉴权位面。\n5. **能力分层清晰**：Tools/Resources/Prompts 区分\"执行/只读/模板\"，语义明确。\n\n**缺点**：\n\n1. **生态年轻**：2024-11 才出，Server 数量在增长但质量参差、良莠不齐。\n2. **依赖 Host 支持**：得 AI 应用自己实现 Client 才能用，老系统接不进来。\n3. **上下文成本**：每个 tool 的 JSON Schema 描述占 token，工具多了会撑大 prompt。\n4. **远程安全仍在演进**：跨网络时的鉴权、多租户、速率限制还不如传统 API 成熟。\n5. **资源占用**：本地 stdio 每接一个 Server 就起一个进程，多了有开销。\n6. **调试复杂**：多进程 + 协议层，排错比\"直接调本地函数\"难。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-2-9",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "动手点：一个最小 MCP Server 伪代码",
+    "keywords": [],
+    "answer": "理解\"Server 怎么注册工具、怎么响应调用\"最直接的方式——下面是个极简示意（以 Python SDK 风格）：\n\n> 读这段代码要抓住两点：**① 工具用 JSON Schema 自描述**（模型才知道怎么填参）；**② Server 只管\"执行+返回结构化结果\"**，至于\"模型什么时候调、调完怎么用\"，那是 Host/Client 和协议的事——这正是 MCP 把\"连接\"和\"思考\"解耦的体现。\n\n# Part 2 · 常见问题清单（面试速记）",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "# 极简 MCP Server：注册一个 \"加法\" 工具\nfrom mcp import Server\n\napp = Server(\"demo-server\")\n\n@app.list_tools()                 # ① 声明能力清单\nasync def list_tools():\n    return [{\n        \"name\": \"add\",\n        \"description\": \"两个整数相加\",\n        \"inputSchema\": {           # 用 JSON Schema 描述入参\n            \"type\": \"object\",\n            \"properties\": {\n                \"a\": {\"type\": \"integer\"},\n                \"b\": {\"type\": \"integer\"}\n            },\n            \"required\": [\"a\", \"b\"]\n        }\n    }]\n\n@app.call_tool()                  # ② 响应调用\nasync def call_tool(name, arguments):\n    if name == \"add\":\n        result = arguments[\"a\"] + arguments[\"b\"]\n        return [{\"type\": \"text\", \"text\": str(result)}]\n\n# Host 的 Client 会: list_tools() 拿到描述 → 模型决定调用 → call_tool(\"add\", {a:2,b:3}) → 返回 \"5\""
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "用一句话讲清楚 MCP 是什么？",
+    "keywords": [
+      "开放标准",
+      "USB-C"
+    ],
+    "answer": "A：MCP（Model Context Protocol，模型上下文协议）是 Anthropic 开源的**开放标准**，把\"AI 应用连外部工具/数据\"做成可插拔的标准件——类比 AI 界的 **USB-C**。它不规定模型怎么想，只规定\"应用和外部程序怎么说话\"（基于 JSON-RPC）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "为什么需要 MCP？",
+    "keywords": [
+      "N×M 集成地狱"
+    ],
+    "answer": "A：核心是消除 **N×M 集成地狱**——N 个应用 × M 个工具，两两定制要写 N×M 套代码；MCP 把它降成 N+M（应用实现一次客户端、工具实现一次服务端，即插即用）。另外它还统一了各家不同的工具调用格式、补齐了\"只读上下文供给\"的标准（Resources）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [
+      "不用会怎样？"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 的三大组件是什么？关系？",
+    "keywords": [
+      "Host"
+    ],
+    "answer": "A：**Host（用户交互的 AI 应用，如 Claude Desktop/IDE）→ Client（Host 内组件，与单个 Server 1:1 连接）→ Server（暴露 tools/resources 的轻量程序）→ 背后的数据源**。一个 Host 可有多个 Client，每个 Client 连一个 Server。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Server 暴露的\"三大原语\"指什么？怎么区分？",
+    "keywords": [
+      "Tools"
+    ],
+    "answer": "A：**Tools（模型主动调、有副作用，如发邮件）/ Resources（应用或用户控制注入的只读资料，如文件）/ Prompts（用户主动选的预设提示模板）**。记忆口诀：**Tools 模型调、Resources 人给看、Prompts 人选用**。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 的完整调用流程是怎样的？（常让画时序图）",
+    "keywords": [],
+    "answer": "A：启动 Server → Client 与 Server 握手 `initialize` → `list_tools` 拿能力清单 → 用户提问 + 工具描述给 LLM → LLM 输出 `tool_use` → Client 转发 `tools/call` → Server 执行回 `tool_result` → Host 回填上下文 → LLM 生成最终答案（可多轮）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 底层通信协议是什么？",
+    "keywords": [
+      "JSON-RPC 2.0",
+      "stdio"
+    ],
+    "answer": "A：**JSON-RPC 2.0** 编码所有消息（请求带 id、响应回 id、通知无 id）。传输有两种：**stdio**（本地子进程走 stdin/stdout，安全不暴露端口）和 **Streamable HTTP**（远程，HTTP POST + SSE 单端点，2025 规范取代早期 HTTP+SSE 双传输）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "stdio 和 HTTP 传输怎么选？",
+    "keywords": [
+      "stdio"
+    ],
+    "answer": "A：本地个人助手、本机工具 → **stdio**（安全、零配置、随 Host 起停）；团队共享、云端能力、跨网络 → **Streamable HTTP**（需自己做鉴权/扩缩容）。stdio 不暴露端口更安全，HTTP 跨网络所以攻击面更大。",
+    "explanation": "",
+    "code": null,
+    "followUps": [
+      "各自优劣"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q8",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 和 Function Calling 到底什么关系？（最高频）",
+    "keywords": [
+      "MCP 是协议/传输标准"
+    ],
+    "answer": "A：**Function Calling 是模型能力**（模型输出结构化调用请求，各家格式不同）；**MCP 是协议/传输标准**（应用↔外部程序怎么标准化通信）。二者互补不替代：MCP 的 `tools` 原语，底层就是把这些 function call 用统一协议在 client↔server 间传递。**MCP 标准化的是\"调用怎么传\"，不是\"模型怎么想\"**。没有 MCP 也能用 function calling（直接调本地函数）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q9",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 和 CLI 有什么区别和联系？",
+    "keywords": [
+      "AI Client 自动调用"
+    ],
+    "answer": "A：CLI 给人/脚本敲，输出给人看的文本，要人解析；MCP Server 由 **AI Client 自动调用**、按 JSON-RPC 通信、输出结构化结果给模型。**联系：可把现有 CLI 包装成 MCP Server**（如 git-mcp-server），让 AI 自动结构化使用旧能力。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q10",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 和 API / 插件 / Agent 框架 怎么区分？",
+    "keywords": [
+      "API",
+      "插件",
+      "Agent 框架"
+    ],
+    "answer": "A：**API** 要写定制代码+鉴权+解析，MCP 把\"调 API\"包成一个统一 tool；**插件**（如 ChatGPT 插件）是厂商封闭生态，MCP 是开放标准、跨 Host 复用；**Agent 框架**（LangChain 等）是编排逻辑（怎么串步骤），MCP 是连接标准（工具怎么接），二者正交、框架可接入 MCP Server。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q11",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 的优点和缺点各是什么？",
+    "keywords": [],
+    "answer": "A：优点——降集成成本（N×M→N+M）、解耦可插拔、跨厂商不锁定、安全边界清、能力分层明。缺点——生态年轻、依赖 Host 支持、工具描述占 token、远程安全仍演进、本地每 Server 起进程有开销、调试较难。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q12",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "什么场景该用 MCP？什么场景其实不需要？",
+    "keywords": [],
+    "answer": "A：当**多个应用要复用同一批工具**、或**想把本地/远程能力标准化开放**时，MCP 价值最大。若只是\"单个应用里调两三个本地函数\"，直接 function calling 就够了，上 MCP 反而增加协议和进程开销——不要为用而用。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q13",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 的安全/鉴权怎么做？",
+    "keywords": [],
+    "answer": "A：本地 stdio Server 靠**进程隔离 + Host 权限管控**，不暴露端口；远程走 **Streamable HTTP**，需自己做 OAuth/API Key/速率限制等鉴权（规范本身把鉴权位面留给实现方，2025 仍在完善）。另外 `Roots` 原语可限定 Server 能访问哪些目录，做最小权限边界。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q14",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 怎么做到\"换模型不影响工具\"？",
+    "keywords": [],
+    "answer": "A：因为工具能力由 **Server 侧用 JSON Schema 自描述**，模型无关——任何能读 tool 描述、会输出 tool_use 的 LLM 都能驱动。Client 把\"模型输出\"翻译成协议调用、把\"结果\"回填上下文，模型与具体工具实现完全解耦。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q15",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 的最新演进？（加分项）",
+    "keywords": [
+      "宣布支持 MCP"
+    ],
+    "answer": "A：2024-11 Anthropic 开源；2025-03 规范把原本\"HTTP+SSE 双传输\"统一为 **Streamable HTTP 单端点**；同年 OpenAI 在 Agents SDK 中**宣布支持 MCP**，社区 Server 生态（文件系统、GitHub、数据库、浏览器等）快速扩张。趋势是成为 Agent 工具接入的事实标准。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q16",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 和 A2A（Agent2Agent）什么关系？（Google，加分项）",
+    "keywords": [
+      "MCP 是纵向的",
+      "A2A 是横向的",
+      "Agent Card",
+      "Task"
+    ],
+    "answer": "A：二者**互补、不在同一层**。**MCP 是纵向的**——解决\"一个 Agent 怎么连上工具和数据\"（Agent ↔ 工具，类比 USB-C）；**A2A 是横向的**——解决\"多个 Agent 怎么互相协作、委派任务\"（Agent ↔ Agent，类比网络协议）。A2A 靠 **Agent Card**（JSON 自描述\"我能干啥\"）做能力发现，靠 **Task** 状态机管任务生命周期。常见用法：协调 Agent 用 A2A 把子任务派给专家 Agent，专家 Agent 内部再用 MCP 调自己的工具。一句话：**MCP 连工具，A2A 连同伴。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-12-MCP-q17",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "MCP 和 ACP（Agent Communication Protocol）什么关系？和 A2A 有何异同？",
+    "keywords": [
+      "ACP",
+      "A2A"
+    ],
+    "answer": "A：**ACP（IBM/BeeAI，2024）和 A2A（Google，2025-04）都解决\"Agent 间通信\"**，二者都是横向协议，与纵向的 MCP 形成\"横 vs 纵\"区分。差异在风格：**A2A** 重\"企业级\"——有 Agent Card 自发现、Task 状态机、多模态 Part；**ACP** 重\"极简\"——无状态 HTTP + 人类可读的纯文本/Markdown 消息，能直接 curl 调试。记住三者常一起用：**Agent 内部用 MCP 接工具，Agent 之间用 A2A/ACP 协作。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-12-MCP"
+    ],
+    "tags": [
+      "MCP"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-12-MCP",
+      "file": "12-MCP.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skills 到底是什么？",
+    "keywords": [
+      "形态",
+      "最经典类比",
+      "新员工",
+      "CLI 是\"命令行老工具",
+      "函数 vs 菜谱",
+      "按需学会"
+    ],
+    "answer": "它通常是一个带元数据的文件/目录（核心叫 `SKILL.md`），里面写着\"要干成这类事，按这几步走\"，并可附带脚本、参考资料。\n\n- **形态**：一个 Skill 一般是一个目录，核心是 `SKILL.md`（YAML frontmatter 写\"名字+描述\"，正文写\"执行步骤\"），可选附带 `scripts/`（干活代码）、`references/`（参考文档）、`assets/`（模板等）。\n- **最经典类比**：\n  - 把 Agent 比作**新员工**：**Tool 是\"他会按按钮调用的单个机器\"**（一个函数），**MCP 是\"这些机器用什么接口跟他连\"**（连接标准），**CLI 是\"命令行老工具\"**，而 **Skill = 一份\"标准作业流程 SOP 手册\"**——告诉他\"遇到这类任务，先干 A、再调机器 B、最后收尾 C\"。\n  - 或类比**函数 vs 菜谱**：Tool 是函数（输入出参确定、模型直接调），Skill 是菜谱（自然语言步骤 + 可调用函数 + 可跑脚本）。\n- **本质**：Skill 是\"**能力的封装 + 自然语言程序**\"。它把\"如何完成某类任务\"从\"写死在代码里\"变成\"模型可读的指令 + 可调用的工具/脚本\"的组合，让 Agent 能**按需学会**干一件复杂的事，而不必一开始就把所有流程塞进上下文。\n\n> 名词补齐：本章的 Skill 指 Agent 框架里的\"能力包\"概念（以 `SKILL.md` 为载体的开放形态），不是某个产品的私有功能；各框架命名略有差异，但\"元数据发现 + 按需加载指令 + 可附脚本\"是共性。",
+    "explanation": "Skill（技能）是把\"一个复杂能力\"打包成\"一个可被 Agent 发现、按需加载、按步骤执行\"的自包含单元。",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "为什么需要 Skills？（解决的真实痛点）",
+    "keywords": [
+      "description",
+      "没有 Skill",
+      "有 Skill",
+      "此时才"
+    ],
+    "answer": "**核心痛点 = \"能力要么全塞进 prompt（撑爆上下文），要么写死成代码（不灵活、不可发现、表达不了复合任务）\"。**\n\n- **痛点 1：上下文爆炸（Context Bloat）**。把\"写周报、做代码审查、跑数据清洗\"每个复杂流程的完整指令都写进 system prompt，token 暴涨、模型注意力被稀释、还易撞上下文上限。**Skill 用\"渐进式披露\"解决**：启动只给名字+一句话描述，用到才读全文。\n- **痛点 2：能力不可发现 / 不可复用**。把流程写死成 Python 函数，模型不会\"按需想起\"该用哪个；写成 Skill 后，靠 **description（描述）做语义匹配**，模型看到任务就能联想到对应 skill。\n- **痛点 3：复杂任务 ≠ 单个工具**。很多任务（\"把未提交改动整理成规范 commit 并推送\"）是**多步骤 + 多工具 + 带推理**的，单靠 function calling 调一个函数表达不了；Skill 用\"指令 + 可调用的工具/脚本\"把这类流程显式写清。\n- **痛点 4：跨项目共享难**。Skill 是独立目录，可复制、可版本管理、可共享——\"一份写好的数据分析 skill\"在所有接入的 Agent 上都能用。\n\n### 2.1 具体案例：没有 Skill vs 有 Skill\n\n假设 Agent 要支持 3 类高级任务：写周报、代码审查、数据透视表生成。\n\n**没有 Skill**：把三套完整 SOP（每套约 500 字指令 + 示例）全写进 system prompt = 1500+ 字常驻上下文，且模型面对\"帮我审下代码\"时，周报/透视表的指令也在干扰它。\n\n**有 Skill**：system prompt 只放 3 行元数据：\n\n用户说\"审下代码\" → 模型匹配 `code-review` → **此时才**加载它的 500 字指令和审查脚本。周报/透视表指令完全不进上下文。上下文占用从 1500 字降到约 3 行描述 + 按需 500 字。",
+    "explanation": "",
+    "code": {
+      "language": "python",
+      "content": "- skill: write-weekly-report  \"根据用户本周笔记生成周报\"\n- skill: code-review           \"按团队规范审查 git diff\"\n- skill: pivot-table           \"把 CSV 转成透视表并画图\""
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "实现方式（一个 Skill 长什么样？）",
+    "keywords": [
+      "目录",
+      "指令"
+    ],
+    "answer": "一个 Skill 是一个**目录**，核心是 `SKILL.md`，并可选附带 `scripts/`、`references/`、`assets/`。\n\n**① `SKILL.md` 的 frontmatter（元数据，用于发现）**：\n\n- `name`：唯一标识，Agent 用来定位 skill。\n- `description`：**关键**——一句话讲清\"这个 skill 能干啥、何时用\"。模型靠它做语义匹配，**写得准不准直接决定能否被选中**。\n\n**② `SKILL.md` 的 body（指令，按需加载）**：用自然语言写\"执行步骤\"，可引用脚本、可告诉模型调哪些工具。\n```markdown\n# code-review 执行步骤\n1. 运行 `scripts/get_diff.py` 拿到当前分支 diff。\n2. 按以下清单逐项检查：空指针、未处理异常、命名规范、测试覆盖。\n3. 如需上下文，调用 `search_code` 工具检索相关定义。\n4. 输出 Markdown 格式的问题清单（严重级别 + 行号 + 建议）。\n```\n\n**③ 附带资源**：`scripts/get_diff.py`（真正干活的代码）、`references/team-style.md`（团队规范文档）。Skill 让\"**指令（自然语言）+ 代码（确定性逻辑）+ 文档（参考）**\"三者打包。\n\n> 关键设计：**元数据极轻、正文可重**。模型启动只读 frontmatter（几十字），只有选中才读 body + 加载脚本——这正是下一节\"渐进式披露\"的物理基础。",
+    "explanation": "",
+    "code": {
+      "language": "yaml",
+      "content": "\nname: code-review\ndescription: 按团队规范审查 git diff，输出问题清单与改进建议（当用户要求\"审代码/CR/review\"时使用）"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "渐进式披露（Progressive Disclosure）—— Skills 的灵魂",
+    "keywords": [
+      "概念",
+      "第 0 层",
+      "第 1 层",
+      "第 2 层",
+      "为什么省 token",
+      "1 个",
+      "流程图"
+    ],
+    "answer": "**概念**：把\"一个 skill 的信息\"分成多层，按需要逐层揭开，避免一次性把全部内容塞进上下文。\n\n- **第 0 层（始终在上下文）**：所有 skill 的 `name` + `description`（极短，几十到几百字总量）。\n- **第 1 层（选中时才读）**：该 skill 的 `SKILL.md` 正文指令。\n- **第 2 层（执行时才读）**：脚本源码、参考文档等长内容，按需加载。\n\n**为什么省 token（面试重点）**：有 N 个 skill，每个正文约 500 字。\n- 不披露 = 常驻 `N × 500` 字；\n- 披露 = 启动仅 `N × 几十字描述`，实际一次任务通常只用 **1 个** skill 的正文 → 上下文从 `O(N × 正文)` 降到 `O(N × 描述 + 1 × 正文)`。当 `N=50` 时差距巨大（25000 字 vs 约 1500 字）。\n\n**流程图（mermaid）**：\n```mermaid\nflowchart TD\n    B[\"Agent 启动: 加载所有 skill 的 name + description(极轻)\"] --> U[\"用户提出任务\"]\n    U --> M[\"模型用 description 语义匹配, 选出最相关 skill\"]\n    M --> L[\"仅加载该 skill 的 SKILL.md 正文 + 脚本\"]\n    L --> E[\"按指令执行: 调工具 / 跑脚本 / 推理\"]\n    E --> R[\"返回结果; 其他 skill 始终未进上下文\"]\n```",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "完整调用流程",
+    "keywords": [
+      "阶段 A · 启动",
+      "A1",
+      "A2",
+      "阶段 B · 一次任务到结果",
+      "渐进加载",
+      "时序图"
+    ],
+    "answer": "**阶段 A · 启动（只加载元数据）**\n- **A1**：Agent 扫描 skills 目录，读取每个 `SKILL.md` 的 frontmatter（name + description）。\n- **A2**：把这些\"元数据清单\"注入 system prompt，作为\"可用能力目录\"。\n\n**阶段 B · 一次任务到结果**\n1. 用户提任务（\"帮我审下这个 PR\"）。\n2. 模型读元数据，匹配到 `code-review` skill，决定\"我打算用 code-review skill\"（以内部决策或 tool_call 形式）。\n3. **渐进加载**：Agent 读取 `code-review` 的 SKILL.md 正文 + 加载 `scripts/get_diff.py`。\n4. 按指令执行：跑脚本拿 diff → 调 `search_code` 工具查上下文 → 生成审查报告。\n5. 把结果返回给用户（或回填上下文供后续步骤用）。\n\n**时序图（mermaid，简化）**：\n```mermaid\nsequenceDiagram\n    participant U as 用户\n    participant A as Agent\n    participant M as LLM\n    participant S as Skill (code-review)\n    participant T as 工具 / 脚本\n    U->>A: 审下这个 PR\n    A->>M: 任务 + 可用 skill 元数据\n    M-->>A: 选中 code-review\n    A->>S: 加载 SKILL.md 正文 + 脚本\n    A->>T: 执行 get_diff / search_code\n    T-->>A: diff / 上下文\n    A->>M: 指令 + 证据 -> 生成报告\n    M-->>U: 审查结果\n```",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 怎么被触发？（触发机制）",
+    "keywords": [
+      "区别",
+      "不是",
+      "skill 是\"元层"
+    ],
+    "answer": "- **模型自主匹配**：最常见。靠 description 语义匹配，模型在推理时\"决定\"用哪个 skill（类似 RAG 的检索决策）。\n- **用户显式指定**：用户说\"用 code-review skill\"，Agent 直接加载。\n- **区别（易混点）**：Skill **不是**\"模型直接 emit 一个 function call\"——它是模型**先选定一个流程包，再按包里的指令去调工具/跑脚本**。即 **skill 是\"元层\"（编排），工具调用是\"执行层\"（动作）**。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "区分与联系（面试最高频：Skills / MCP / CLI / Function Calling / Tools）",
+    "keywords": [
+      "原子动作",
+      "Skill",
+      "多步流程包",
+      "调用 Tool",
+      "MCP",
+      "连接协议",
+      "CLI",
+      "Agent"
+    ],
+    "answer": "**7.1 Skills vs Tools / Function Calling**\n- **Tool / Function Calling**：单个**原子动作**，模型直接输出结构化调用（`{\"name\":\"get_weather\",\"args\":{}}`），入参由 JSON Schema 定义。适合\"查个天气\"\"算个加法\"。\n- **Skill**：**多步流程包**，告诉模型\"要完成这类事，按步骤调哪些工具/跑哪些脚本\"。适合\"审代码\"\"写周报\"这种复合任务。\n- **关系 = 上下层**：Skill 的 body 里会**调用 Tool**；Function Calling 是 Skill 内部\"执行某一步\"的机制。一个 skill 常对应\"多个 tool call + 一段推理\"。\n\n**7.2 Skills vs MCP**\n- **MCP** 是**连接协议**（Agent ↔ 工具/数据，纵向，规定调用怎么传）。\n- **Skill** 是**能力封装格式**（把一个能力\"怎么用\"写成指令包，可纵向接 MCP 也可本地跑脚本）。\n- **关系 = 互补/可组合**：一个 skill 的指令可以写\"调用某某 MCP Server 暴露的 `git_push` 工具\"——**MCP 负责把工具接进来，Skill 负责编排怎么用这些工具**。二者不在同层。\n\n**7.3 Skills vs CLI**\n- **CLI** 是给**人**敲的命令程序，输出人看文本。\n- **Skill** 是给 **Agent** 的流程包；且常常**把 CLI 包进 skill**（如把 `git` 命令封装进 `git-workflow` skill，附上\"何时用哪条命令\"的自然语言说明 + 渐进披露）。\n- 联系同 MCP：CLI 是底层能力，Skill 是上层编排 + 披露。\n\n**7.4 Skills vs Prompts（提示模板）**\n- **Prompt 模板** 是\"一段固定填空的话\"，用户点一下套用，无执行逻辑。\n- **Skill** 带\"执行步骤 + 可调工具 + 可跑脚本\"，是能动起来的流程。Skill 比 Prompt 重得多。\n\n**一张总对比表**：\n\n| 维度 | Skill | Tool / Function Calling | MCP | CLI |\n| --- | --- | --- | --- | --- |\n| 是什么 | 多步能力包（SOP+脚本） | 单个原子函数 | 连接协议标准 | 人用命令行 |\n| 粒度 | 复合任务 | 原子动作 | 传输层 | 单条命令 |\n| 触发 | 模型按描述匹配/用户指定 | 模型 emit tool_call | Client↔Server 握手 | 人/脚本 |\n| 内容 | 自然语言指令+脚本+文档 | JSON Schema | JSON-RPC | 文本输出 |\n| 与模型关系 | 元层（编排） | 执行层（动作） | 连接层 | 底层能力 |",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-8",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "如何协同（一个端到端例子）",
+    "keywords": [
+      "场景",
+      "Skill 层",
+      "CLI 层",
+      "MCP 层",
+      "渐进披露",
+      "Skill 是总导演"
+    ],
+    "answer": "**场景**：用户说\"把当前分支的未提交改动，整理成一条符合规范的 commit 并推到远程\"。\n\n协同链路：\n1. **Skill 层（编排+披露）**：Agent 从元数据匹配到 `git-workflow` skill，加载其正文：\"① 跑 `git status`/`git diff` 看改动 ② 用 `commit_message_generator` 工具生成规范 message ③ 调 GitHub MCP Server 的 `git_commit`+`git_push` 工具 ④ 校验结果\"。\n2. **CLI 层（底层命令）**：步骤①实际执行 `git diff`（CLI 命令，被 skill 的脚本封装）。\n3. **Function Calling / Tool 层（原子动作）**：步骤②模型调用 `commit_message_generator` 工具。\n4. **MCP 层（连接）**：步骤③的 `git_commit`/`git_push` 走 GitHub MCP Server（纵向连接；Skill 只是指令里\"点名\"用它们）。\n5. **渐进披露**：全程只有 `git-workflow` 这一个 skill 的正文 + 相关脚本进上下文，其他 skill 的元数据在但不占正文空间。\n\n> 一句话记忆：**Skill 是总导演（编排+披露），MCP 是设备接口（连接工具），CLI 是底层机器（命令），Function Calling 是按下单个按钮的动作。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-9",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "优缺点",
+    "keywords": [
+      "优点",
+      "省上下文",
+      "可发现",
+      "关注点分离",
+      "缺点",
+      "调试难"
+    ],
+    "answer": "**优点**：\n1. **省上下文**：渐进式披露，启动只载元数据。\n2. **可发现**：description 语义匹配，模型会自动\"想起\"合适流程。\n3. **可复用/可共享**：独立目录，跨项目复制、版本管理。\n4. **表达复合任务**：把多步+多工具+推理写清，弥补单 tool 不足。\n5. **关注点分离**：指令（自然语言）与确定性逻辑（脚本）分开维护。\n\n**缺点**：\n1. **描述质量决定成败**：description 写不好就匹配不上（\"垃圾进垃圾出\"）。\n2. **依赖模型遵循指令**：skill body 是\"建议式\"自然语言，模型可能不严格按步骤走（不像代码强制）。\n3. **编排仍是软约束**：复杂 skill 内的步骤顺序靠模型自律，缺乏硬状态机保证。\n4. **调试难**：自然语言指令 + 脚本 + 工具混合，出错难定位是哪层。\n5. **可能误触发/越权**：自动匹配可能选错 skill，需在 Host 层加确认/权限。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-2-10",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "动手点：一个最小 SKILL.md",
+    "keywords": [
+      "② 指令"
+    ],
+    "answer": "```python\n# scripts/plot.py（确定性逻辑，与指令分离）\nimport sys, pandas as pd, matplotlib.pyplot as plt\ndf = pd.read_csv(sys.argv[1])\ndf.plot(x=sys.argv[2], y=sys.argv[3], kind=\"bar\")\nplt.savefig(\"chart.png\")\n```\n> 读这段代码抓住两点：**① 元数据 description 写清\"何时用\"**（模型靠它匹配）；**② 指令（自然语言）与脚本（硬逻辑）分离**——模型负责\"决策用这个 skill 并填参\"，脚本负责\"确定性地画图\"。\n\n# Part 2 · 常见问题清单（面试速记）",
+    "explanation": "",
+    "code": {
+      "language": "markdown",
+      "content": "\nname: csv-to-chart\ndescription: 把用户上传的 CSV 按指定列画成柱状图并保存 PNG（当用户说\"画个图/可视化/统计这张表\"时使用）\n\n# 执行步骤\n1. 读取用户指定的 CSV 路径与列名。\n2. 运行 scripts/plot.py <csv> <x_col> <y_col> 生成 chart.png。\n3. 若需统计摘要，调用 summarize_csv 工具。\n4. 把 chart.png 路径返回给用户。"
+    },
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q1",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "用一句话讲清楚 Skill 是什么？",
+    "keywords": [],
+    "answer": "A：Skill（技能）是把\"一个复杂能力\"打包成\"可被 Agent 发现、按需加载、按步骤执行\"的自包含单元——核心是 `SKILL.md`（frontmatter 写名字+描述，正文写执行步骤），可附脚本与文档。类比：**Tool 是单个机器，Skill 是教 Agent 怎么用机器的 SOP 手册。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q2",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "为什么需要 Skill？",
+    "keywords": [],
+    "answer": "A：核心是消除两个痛点——**① 上下文爆炸**：把每个复杂流程完整指令都塞进 prompt，token 暴涨还干扰模型；**② 复合任务表达不了**：\"审代码\"\"写周报\"是多步+多工具+推理，单靠 function calling 一个函数说不清。Skill 用\"渐进式披露\"只常驻描述、用到才读全文，并用自然语言把流程写清。",
+    "explanation": "",
+    "code": null,
+    "followUps": [
+      "不用会怎样？"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q3",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "一个 SKILL.md 由哪两部分组成？",
+    "keywords": [
+      "frontmatter",
+      "body"
+    ],
+    "answer": "A：**frontmatter（元数据）** = `name` + `description`，用于发现与匹配，启动就加载；**body（正文指令）** = 自然语言写执行步骤，可引用脚本、告诉模型调哪些工具，选中才加载。`description` 写得准不准直接决定能否被模型选中。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q4",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "什么是渐进式披露（Progressive Disclosure）？为什么省 token？",
+    "keywords": [],
+    "answer": "A：把一个 skill 的信息分三层按需揭开——**第 0 层始终在上下文**（所有 skill 的 name+description，极短）、**第 1 层选中才读**（SKILL.md 正文）、**第 2 层执行才读**（脚本/文档）。省 token 原理：N 个 skill 不披露要常驻 `N×正文`，披露后启动仅 `N×描述`、一次任务通常只用 1 个正文，上下文从 `O(N×正文)` 降到 `O(N×描述 + 1×正文)`；N=50 时差距是 25000 字 vs 约 1500 字。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q5",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 的完整调用流程是怎样的？",
+    "keywords": [
+      "渐进加载"
+    ],
+    "answer": "A：启动扫描 skills 目录、读 frontmatter 注入\"能力目录\"（A1-A2）→ 用户提任务 → 模型按 description 语义匹配选 skill（B1-B2）→ **渐进加载**该 skill 正文+脚本（B3）→ 按指令跑脚本/调工具/推理（B4）→ 返回结果（B5）。可多轮。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q6",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 怎么被触发？和直接调工具有什么区别？",
+    "keywords": [
+      "Skill 是\"元层/编排"
+    ],
+    "answer": "A：两种触发——**模型自主按描述匹配**（最常见）、**用户显式指定**。区别在层级：**Skill 是\"元层/编排\"**（先选定流程包），**Function Calling 是\"执行层/动作\"**（模型直接 emit 一个 tool call）。Skill 是\"先选 SOP 再按 SOP 调工具\"，不是\"直接按一个按钮\"。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q7",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 和 Tools / Function Calling 到底什么关系？（最高频）",
+    "keywords": [
+      "Tool 是单个原子函数",
+      "Skill 是多步流程包",
+      "上下层关系"
+    ],
+    "answer": "A：**Tool 是单个原子函数**（查天气、算加法），模型直接输出调用；**Skill 是多步流程包**（审代码、写周报），告诉模型\"按步骤调哪些工具/跑哪些脚本\"。二者**上下层关系**：Skill 的 body 里会调用 Tool，Function Calling 是 Skill 内部\"执行某一步\"的机制。一个 skill 通常对应\"多个 tool call + 一段推理\"。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q8",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 和 MCP 是什么关系？（最高频）",
+    "keywords": [
+      "MCP 是连接协议",
+      "Skill 是能力封装格式"
+    ],
+    "answer": "A：**MCP 是连接协议**（Agent↔工具/数据，纵向，规定调用怎么传）；**Skill 是能力封装格式**（把一个能力\"怎么用\"写成指令包，可接 MCP 也可本地跑脚本）。二者**互补/可组合**：一个 skill 的指令可以写\"调用某某 MCP Server 的 `git_push` 工具\"——**MCP 负责把工具接进来，Skill 负责编排怎么用**。不在同层。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q9",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 和 CLI 有什么区别和联系？",
+    "keywords": [
+      "Agent",
+      "包进 skill"
+    ],
+    "answer": "A：CLI 给**人**敲、输出人看文本；Skill 给 **Agent**、附自然语言指令+渐进披露。联系：常把 CLI **包进 skill**（如把 `git` 命令封装成 `git-workflow` skill，附\"何时用哪条命令\"的说明）。CLI 是底层能力，Skill 是上层编排+披露。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q10",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill / MCP / CLI / Function Calling 四者怎么区分、怎么协同？",
+    "keywords": [
+      "Skill",
+      "CLI",
+      "MCP"
+    ],
+    "answer": "A：**粒度与层级不同**——Function Calling 是原子动作（执行层）、MCP 是连接协议（连接层）、CLI 是底层命令（底层能力）、Skill 是流程包（元层/编排）。协同例：用户说\"把改动整理成 commit 并推送\" → **Skill** `git-workflow` 编排：用 **CLI** `git diff` 看改动、用 **Function Calling** 调 `commit_message_generator` 生成信息、用 **MCP** GitHub Server 的 `git_push` 推送。**Skill 是总导演，MCP 是接口，CLI 是机器，Function Calling 是按钮。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q11",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 的优点和缺点各是什么？",
+    "keywords": [],
+    "answer": "A：优点——省上下文（渐进披露）、可发现（描述匹配）、可复用共享、能表达复合任务、指令与脚本关注点分离。缺点——description 写差就匹配不上、依赖模型遵循\"建议式\"指令（不像代码强制）、编排是软约束无硬状态机、调试难（多层混合）、可能误触发需在 Host 层加权限。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q12",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 的 description 写不好会怎样？",
+    "keywords": [
+      "匹配不上或用错 skill"
+    ],
+    "answer": "A：description 是模型选 skill 的唯一依据，写偏就**匹配不上或用错 skill**（垃圾进垃圾出）。写好原则：① 写清\"能干什么\"；② 写清\"何时用\"（含用户可能的同义说法，如\"审代码/CR/review\"）；③ 不要堆实现细节。好例子见 §3 的 `code-review` description。",
+    "explanation": "",
+    "code": null,
+    "followUps": [
+      "怎么写才对？"
+    ],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q13",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "Skill 和 Prompt 模板有什么不同？",
+    "keywords": [
+      "Prompt 模板",
+      "Skill"
+    ],
+    "answer": "A：**Prompt 模板**是\"一段固定填空的话\"，用户点一下套用，无执行逻辑；**Skill** 带\"执行步骤 + 可调工具 + 可跑脚本\"，是能动起来的流程。Skill 比 Prompt 重得多——Prompt 只管\"怎么说\"，Skill 还管\"怎么做\"。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q14",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "一个 Skill 内部怎么用 MCP / CLI / Function Calling？",
+    "keywords": [
+      "点名"
+    ],
+    "answer": "A：Skill 的 body 是\"指令\"，它**点名**使用下层能力：① 写\"运行 `scripts/get_diff.py`\"——用本地脚本/CLI 封装；② 写\"调用 `search_code` 工具\"——用 Function Calling 调原子工具；③ 写\"调 GitHub MCP Server 的 `git_push`\"——用 MCP 连远程工具。**Skill 自己不实现这些，只编排它们。**",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  },
+  {
+    "id": "agent-13-Skills-q15",
+    "direction": "agent_llm_application",
+    "questionType": "theory",
+    "question": "用 Skill 的最佳实践有哪些？",
+    "keywords": [
+      "description 写好",
+      "控制 skill 数量与粒度",
+      "Host 层加权限/确认"
+    ],
+    "answer": "A：① **description 写好**（清\"干什么+何时用\"，决定可发现性）；② **指令与脚本分离**（自然语言写步骤，确定性逻辑放 `scripts/`，易维护）；③ **控制 skill 数量与粒度**（太碎难匹配、太粗不精准）；④ **Host 层加权限/确认**（防自动匹配误触发越权）；⑤ **渐进披露纪律**（body 里不塞启动就要的东西，长文档放 `references/` 按需读）。",
+    "explanation": "",
+    "code": null,
+    "followUps": [],
+    "difficulty": 3,
+    "orderPath": [
+      "agent-13-Skills"
+    ],
+    "tags": [
+      "Skills"
+    ],
+    "source": {
+      "type": "knowledge_note",
+      "section": "agent-13-Skills",
+      "file": "13-Skills.md"
+    },
+    "status": "approved",
+    "version": 1,
+    "updatedAt": "2026-09-26"
+  }
+]

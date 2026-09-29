@@ -1,0 +1,11 @@
+# 跨机器（Windows / macOS / Linux）统一换行，避免 diff 噪声
+* text=auto eol=lf
+
+# 锁文件不进 diff，减少无意义变更
+package-lock.json -diff
+
+# 二进制资源
+*.png binary
+*.jpg binary
+*.ico binary
+*.svg text

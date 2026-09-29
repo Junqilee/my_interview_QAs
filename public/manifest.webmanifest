@@ -1,0 +1,18 @@
+{
+  "name": "秋招模拟面试问答系统",
+  "short_name": "面试刷题",
+  "description": "三方向 · 四题型 · 三级展开的离线模拟面试刷题 PWA",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

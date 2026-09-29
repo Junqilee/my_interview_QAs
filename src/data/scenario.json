@@ -1,0 +1,227 @@
+[
+ {
+  "id": "scn-a1",
+  "direction": "agent_llm_application",
+  "questionType": "scenario",
+  "question": "设计一个'代码评审 Agent'：能读 PR、指出问题、给修改建议。你怎么搭？",
+  "keywords": [
+   "工具集",
+   "分层评审",
+   "可溯源引用",
+   "人审闭环"
+  ],
+  "answer": "架构：① 规划器把'评审'拆成 静态检查/逻辑/安全/风格 子任务；② 工具层挂 git diff 读取、AST/正则扫描、单测运行、向量检索团队规范；③ 评审器按子任务逐条产出'问题+证据+建议'，引用具体文件行；④ 结果交人工确认。关键是可溯源（每条建议带代码位置）和让人拍板，不自动改主分支。",
+  "explanation": "背景约束：代码安全敏感，不能乱改。目标：减负且可靠。可用数据：PR diff、历史 issue、团队规范。权衡指标：召回问题 vs 误报率。框架：规划→工具→证据化评审→人审。误区：让 Agent 直接 push 改动；不引用证据导致不可信。",
+  "difficulty": 3,
+  "orderPath": [
+   "场景题",
+   "Agent",
+   "代码评审"
+  ],
+  "tags": [
+   "场景",
+   "Agent",
+   "工具调用"
+  ],
+  "source": {
+   "type": "scenario_seed",
+   "section": "Agent-1"
+  },
+  "status": "approved",
+  "version": 1,
+  "updatedAt": "2026-09-26"
+ },
+ {
+  "id": "scn-a2",
+  "direction": "agent_llm_application",
+  "questionType": "scenario",
+  "question": "用户问一个需要多步工具调用的复杂问题（如'查上周销量下滑原因'），Agent 怎么规划与执行？",
+  "keywords": [
+   "任务分解",
+   "工具编排",
+   "中间状态",
+   "终止条件"
+  ],
+  "answer": "用 ReAct/计划-执行循环：先由 LLM 把问题拆成子查询（拉销量数据→按维度下钻→查营销/天气/竞品事件），每步选工具并校验返回，把中间结论写回记忆再决定下一步。设明确终止条件（信息足够 or 达 max_steps）。失败工具调用要重试/换路而非卡死。",
+  "explanation": "背景约束：单轮检索无法回答，需多跳。目标：正确收敛到根因。可用数据：数仓、BI、事件库。权衡指标：准确率 vs 步数成本。框架：分解→工具循环→记忆→终止。误区：一次性塞所有工具结果；无终止条件陷入循环。",
+  "difficulty": 3,
+  "orderPath": [
+   "场景题",
+   "Agent",
+   "多步规划"
+  ],
+  "tags": [
+   "场景",
+   "Agent",
+   "规划"
+  ],
+  "source": {
+   "type": "scenario_seed",
+   "section": "Agent-2"
+  },
+  "status": "approved",
+  "version": 1,
+  "updatedAt": "2026-09-26"
+ },
+ {
+  "id": "scn-a3",
+  "direction": "agent_llm_application",
+  "questionType": "scenario",
+  "question": "Agent 出现幻觉或调用了错误工具，怎么在系统层兜底，而不是只靠 prompt？",
+  "keywords": [
+   "schema校验",
+   "Guardrail",
+   "结果校验",
+   "降级"
+  ],
+  "answer": "系统层多层兜底：① 工具出入参用 schema 强校验，非法直接拒；② 调用前做相关性/权限 Guardrail（如敏感操作需确认）；③ 结果做事实/格式校验与引用校验（检索为空则诚实告知，不编造）；④ 超时/异常走降级（转人工或给保守答案）。Prompt 只定意图，约束靠工程。",
+  "explanation": "背景约束：LLM 不可靠，必须可兜底。目标：失败可观测可恢复。可用数据：调用日志、校验规则。权衡指标：安全 vs 灵活性。框架：schema→Guardrail→结果校验→降级。误区：全靠 prompt 约束，一出错就崩。",
+  "difficulty": 3,
+  "orderPath": [
+   "场景题",
+   "Agent",
+   "可靠性"
+  ],
+  "tags": [
+   "场景",
+   "Agent",
+   "Guardrail"
+  ],
+  "source": {
+   "type": "scenario_seed",
+   "section": "Agent-3"
+  },
+  "status": "approved",
+  "version": 1,
+  "updatedAt": "2026-09-26"
+ },
+ {
+  "id": "scn-a4",
+  "direction": "agent_llm_application",
+  "questionType": "scenario",
+  "question": "如何给 Agent 加长期记忆，让它能跨会话记住用户偏好与历史结论？",
+  "keywords": [
+   "分层记忆",
+   "检索注入",
+   "固化",
+   "隐私隔离"
+  ],
+  "answer": "分层：短期（本轮对话）放上下文；长期分用户级/租户级，用向量库按语义检索注入，量小且稳定的用全文注入。新结论经'固化'（摘要/去噪）成长期记忆，避免噪声累积。关键是隔离与权限（用户 A 看不到 B 的记忆）和可控的遗忘/更新。",
+  "explanation": "背景约束：上下文有限、需个性化。目标：跨会话连贯且不串数据。可用数据：历史对话、用户画像。权衡指标：相关性 vs 上下文预算。框架：分层+检索注入+固化+隔离。误区：无差别把所有历史塞进 prompt 超预算。",
+  "difficulty": 3,
+  "orderPath": [
+   "场景题",
+   "Agent",
+   "记忆"
+  ],
+  "tags": [
+   "场景",
+   "Agent",
+   "Memory"
+  ],
+  "source": {
+   "type": "scenario_seed",
+   "section": "Agent-4"
+  },
+  "status": "approved",
+  "version": 1,
+  "updatedAt": "2026-09-26"
+ },
+ {
+  "id": "scn-a5",
+  "direction": "agent_llm_application",
+  "questionType": "scenario",
+  "question": "如何做 Agent 的自动化评测，避免每次靠人工抽检？",
+  "keywords": [
+   "评测集",
+   "双评测器",
+   "冻结配置",
+   "回归"
+  ],
+  "answer": "建评测集（任务+标准答案/标准轨迹）+ 双评测器：LLM-Judge 打质量分、Code/规则评测器验可执行性与约束满足。每次改动冻结'配置+评测器版本'，跑回归看分数与通过率，根因可定位到哪步变差。人工只抽检边界，不兜底日常。",
+  "explanation": "背景约束：人工抽检不可规模化。目标：可量化、可复现。可用数据：历史对话、黄金集。权衡指标：评测准度 vs 成本。框架：评测集+双评测器+冻结+回归。误区：评测器与系统同源导致自夸；配置不冻结无法归因。",
+  "difficulty": 3,
+  "orderPath": [
+   "场景题",
+   "Agent",
+   "评测"
+  ],
+  "tags": [
+   "场景",
+   "Agent",
+   "Evaluation"
+  ],
+  "source": {
+   "type": "scenario_seed",
+   "section": "Agent-5"
+  },
+  "status": "approved",
+  "version": 1,
+  "updatedAt": "2026-09-26"
+ },
+ {
+  "id": "scn-a6",
+  "direction": "agent_llm_application",
+  "questionType": "scenario",
+  "question": "把'自然语言需求'自动转成数学模型/调度代码（LLM4OR），你会怎么设计五阶段闭环？",
+  "keywords": [
+   "需求理解",
+   "建模",
+   "代码生成",
+   "执行验证",
+   "反馈迭代"
+  ],
+  "answer": "五阶段：① 需求理解（抽取实体/约束/目标）；② 数学建模（生成 MILP/启发式模型）；③ 代码实现（Gurobi/pulp 或自研求解器调用）；④ 执行调试（跑通并捕获错误）；⑤ 结果验证（对比基线、检查可行性）。用领域知识库+RAG+Few-shot 提升建模准确率，并让 LLM 根据执行报错自我修正。",
+  "explanation": "背景约束：自然语言歧义多、建模易错。目标：端到端可运行且正确。可用数据：历史建模案例、领域约束库。权衡指标：建模准确率 vs 自动化程度。框架：理解→建模→代码→调试→验证闭环。误区：跳过验证直接交付错误模型。",
+  "difficulty": 4,
+  "orderPath": [
+   "场景题",
+   "Agent",
+   "LLM4OR"
+  ],
+  "tags": [
+   "场景",
+   "Agent",
+   "LLM4OR"
+  ],
+  "source": {
+   "type": "scenario_seed",
+   "section": "Agent-6"
+  },
+  "status": "approved",
+  "version": 1,
+  "updatedAt": "2026-09-26"
+ },
+ {
+  "id": "scn-a7",
+  "direction": "agent_llm_application",
+  "questionType": "scenario",
+  "question": "多 Agent 协作（规划/检索/评测各一个）如何避免消息风暴与冲突？",
+  "keywords": [
+   "角色边界",
+   "消息队列",
+   "仲裁",
+   "共享黑板"
+  ],
+  "answer": "明确角色边界与接口：用共享'黑板/状态'而非两两私聊，减少 N² 消息；规划者发任务、检索者回证据、评测者校验，单向为主。设消息预算与去重，冲突由规划者仲裁。关键是指令/数据分离，避免重复广播同一上下文。",
+  "explanation": "背景约束：多 Agent 易消息爆炸、目标冲突。目标：协作高效且可控。可用数据：各 Agent 产出 schema。权衡指标：协同质量 vs 通信成本。框架：角色边界+共享黑板+预算+仲裁。误区：全连接对话导致 O(N²) 与循环。",
+  "difficulty": 4,
+  "orderPath": [
+   "场景题",
+   "Agent",
+   "多智能体"
+  ],
+  "tags": [
+   "场景",
+   "Agent",
+   "多智能体"
+  ],
+  "source": {
+   "type": "scenario_seed",
+   "section": "Agent-7"
+  },
+  "status": "approved",
+  "version": 1,
+  "updatedAt": "2026-09-26"
+ }
+]
